@@ -1,8 +1,8 @@
-import { Context } from "hono";
-import { streamText, convertToModelMessages } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
+import { convertToModelMessages, streamText } from "ai";
+import type { Context } from "hono";
 import { config } from "../config/index.js";
-import { ChatRequest, UserLocation } from "../types/chat.js";
+import type { ChatRequest } from "../types/chat.js";
 
 export const chatHandler = async (c: Context) => {
   const { apiKey } = config.openai;

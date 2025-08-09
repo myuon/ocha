@@ -1,9 +1,18 @@
-import { useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { UserLocation } from "../../api/src/types/chat";
+import { useEffect, useState } from "react";
+import type { UserLocation } from "../../api/src/types/chat";
 import { Markdown } from "./components/Markdown";
 import { ToolDisplay } from "./components/ToolDisplay";
+
+interface ToolPart {
+  type: string;
+  toolCallId: string;
+  state: "call" | "output-available" | "partial" | "error";
+  input: Record<string, unknown>;
+  output?: Record<string, unknown>;
+  providerExecuted?: boolean;
+}
 
 export default function App() {
   const [message, setMessage] = useState<string>("Loading...");
@@ -74,12 +83,13 @@ export default function App() {
               Start a conversation with the AI...
             </p>
           )}
-{messages?.map((message) => (
+          {messages?.map((message) => (
             <div
               key={message.id}
               style={{
                 display: "flex",
-                justifyContent: message.role === "user" ? "flex-end" : "flex-start",
+                justifyContent:
+                  message.role === "user" ? "flex-end" : "flex-start",
                 marginBottom: 16,
               }}
             >
@@ -93,32 +103,34 @@ export default function App() {
                 }}
               >
                 <strong
-                style={{
-                  color: message.role === "user" ? "#1976d2" : "#7b1fa2",
-                }}
-              >
-                {message.role === "user" ? "You:" : "AI:"}
-              </strong>
-              <div style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap" }}>
-                {message.parts?.map((part, index) => {
-                  if (part.type === "text") {
-                    return (
-                      <Markdown
-                        key={index}
-                        id={message.id}
-                        content={part.text}
-                      />
-                    );
-                  }
+                  style={{
+                    color: message.role === "user" ? "#1976d2" : "#7b1fa2",
+                  }}
+                >
+                  {message.role === "user" ? "You:" : "AI:"}
+                </strong>
+                <div style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap" }}>
+                  {message.parts?.map((part, index) => {
+                    if (part.type === "text") {
+                      return (
+                        <Markdown
+                          key={index}
+                          id={message.id}
+                          content={part.text}
+                        />
+                      );
+                    }
 
-                  // Handle tool parts
-                  if (part.type.startsWith("tool-")) {
-                    return <ToolDisplay key={index} part={part as any} />;
-                  }
+                    // Handle tool parts
+                    if (part.type.startsWith("tool-")) {
+                      return (
+                        <ToolDisplay key={index} part={part as ToolPart} />
+                      );
+                    }
 
-                  return null;
-                })}
-              </div>
+                    return null;
+                  })}
+                </div>
               </div>
             </div>
           ))}

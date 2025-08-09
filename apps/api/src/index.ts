@@ -1,11 +1,11 @@
-import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
+import { Hono } from "hono";
 import { config } from "./config/index.js";
-import { healthHandler } from "./routes/health.js";
+import { errorHandler } from "./middleware/error.js";
 import { helloHandler } from "./routes/api.js";
 import { chatHandler } from "./routes/chat.js";
-import { errorHandler } from "./middleware/error.js";
+import { healthHandler } from "./routes/health.js";
 import { setupGracefulShutdown } from "./utils/server.js";
 
 const app = new Hono();

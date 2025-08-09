@@ -2,8 +2,8 @@ interface ToolPart {
   type: string;
   toolCallId: string;
   state: "call" | "output-available" | "partial" | "error";
-  input: Record<string, any>;
-  output?: Record<string, any>;
+  input: Record<string, unknown>;
+  output?: Record<string, unknown>;
   providerExecuted?: boolean;
 }
 
@@ -144,11 +144,15 @@ export function ToolDisplay({ part }: ToolDisplayProps) {
           {getStateDisplay(part.state)}
         </span>
       </summary>
-      
-      <div style={{ padding: "0 12px 12px 12px", borderTop: "1px solid #e0e0e0" }}>
+
+      <div
+        style={{ padding: "0 12px 12px 12px", borderTop: "1px solid #e0e0e0" }}
+      >
         {Object.keys(part.input).length > 0 && (
           <div style={{ marginBottom: 8 }}>
-            <strong style={{ color: "#666", fontSize: "0.85em" }}>Input:</strong>
+            <strong style={{ color: "#666", fontSize: "0.85em" }}>
+              Input:
+            </strong>
             <div
               style={{
                 backgroundColor: "#fff",
@@ -175,7 +179,9 @@ export function ToolDisplay({ part }: ToolDisplayProps) {
 
         {part.output && (
           <div style={{ marginBottom: 8 }}>
-            <strong style={{ color: "#666", fontSize: "0.85em" }}>Output:</strong>
+            <strong style={{ color: "#666", fontSize: "0.85em" }}>
+              Output:
+            </strong>
             <div
               style={{
                 backgroundColor: "#fff",

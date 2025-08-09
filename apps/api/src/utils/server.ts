@@ -1,4 +1,6 @@
-export const setupGracefulShutdown = (server: any) => {
+export const setupGracefulShutdown = (server: {
+  close: (callback?: () => void) => void;
+}) => {
   const shutdown = (signal: string) => {
     console.log(`${signal} received, shutting down gracefully`);
     server.close(() => {

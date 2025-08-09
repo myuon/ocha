@@ -114,7 +114,7 @@ export default function App() {
                     if (part.type === "text") {
                       return (
                         <Markdown
-                          key={index}
+                          key={`${message.id}-text-${index}`}
                           id={message.id}
                           content={part.text}
                         />
@@ -124,7 +124,10 @@ export default function App() {
                     // Handle tool parts
                     if (part.type.startsWith("tool-")) {
                       return (
-                        <ToolDisplay key={index} part={part as ToolPart} />
+                        <ToolDisplay
+                          key={`${message.id}-tool-${index}`}
+                          part={part as ToolPart}
+                        />
                       );
                     }
 

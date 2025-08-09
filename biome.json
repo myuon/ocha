@@ -13,13 +13,15 @@
       "suspicious": {
         "noExplicitAny": "warn"
       }
-    }
+    },
+    "includes": ["apps/*/src/**/*.{ts,tsx,js,jsx}"]
   },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
     "indentWidth": 2,
-    "lineWidth": 80
+    "lineWidth": 80,
+    "includes": ["apps/*/src/**/*.{ts,tsx,js,jsx}"]
   },
   "javascript": {
     "formatter": {

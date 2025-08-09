@@ -24,7 +24,10 @@ export const Markdown = memo(
     const blocks = useMemo(() => parseMarkdownIntoBlocks(content), [content]);
 
     return blocks.map((block, index) => (
-      <MarkdownBlock content={block} key={`${id}-block_${index}`} />
+      <MarkdownBlock
+        content={block}
+        key={`${id}-block-${index}-${block.slice(0, 20).replace(/\s/g, "")}`}
+      />
     ));
   }
 );

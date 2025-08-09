@@ -108,15 +108,9 @@ export default function App() {
 
                   // Handle tool parts
                   if (part.type.startsWith("tool-")) {
-                    return (
-                      <ToolDisplay
-                        key={index}
-                        part={part as any}
-                      />
-                    );
+                    return <ToolDisplay key={index} part={part as any} />;
                   }
 
-                  console.warn("Unknown part type:", part);
                   return null;
                 })}
               </div>

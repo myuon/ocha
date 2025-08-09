@@ -1,13 +1,3 @@
-export interface UserLocation {
-  type: "approximate";
-  coordinates?: {
-    latitude: number;
-    longitude: number;
-  };
-  city?: string;
-  region?: string;
-}
-
 export interface ChatRequest {
   messages: Array<{
     id?: string;
@@ -18,5 +8,4 @@ export interface ChatRequest {
       text: string;
     }>;
   }>;
-  userLocation?: UserLocation;
 }

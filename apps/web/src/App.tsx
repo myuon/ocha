@@ -1,7 +1,6 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useEffect, useState } from "react";
-import type { UserLocation } from "../../api/src/types/chat";
+import { useState } from "react";
 import { Markdown } from "./components/Markdown";
 import { ToolDisplay } from "./components/ToolDisplay";
 
@@ -15,63 +14,23 @@ interface ToolPart {
 }
 
 export default function App() {
-  const [message, setMessage] = useState<string>("Loading...");
-  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const { messages, sendMessage } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
-      body: {
-        userLocation,
-      },
     }),
   });
   const [input, setInput] = useState("");
 
-  useEffect(() => {
-    fetch("/api/hello")
-      .then((r) => r.json())
-      .then((d) => setMessage(d.message))
-      .catch(() => setMessage("Could not reach API"));
-  }, []);
-
-  // Get user location on component mount
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          // Convert coordinates to approximate location format
-          setUserLocation({
-            type: "approximate",
-            coordinates: {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            },
-          });
-        },
-        (error) => {
-          console.log("Geolocation error:", error);
-          // Fallback location is handled on the server side
-        },
-        {
-          timeout: 5000,
-          maximumAge: 300000, // 5 minutes
-        }
-      );
-    }
-  }, []);
-
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", padding: 24 }}>
       <h1>Ocha</h1>
-      <p>{message}</p>
       <p style={{ color: "#666" }}>React + Vite + TypeScript</p>
       <hr style={{ margin: "24px 0" }} />
 
       <h2>AI Chat</h2>
-      <div style={{ maxWidth: 800, margin: "0 auto" }}>
+      <div>
         <div
           style={{
-            border: "1px solid #ddd",
             borderRadius: 8,
             padding: 16,
             marginBottom: 16,

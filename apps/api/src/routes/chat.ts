@@ -2,7 +2,6 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { convertToModelMessages, streamText } from "ai";
 import type { Context } from "hono";
 import { config } from "../config/index.js";
-import type { ChatRequest } from "../types/chat.js";
 
 export const chatHandler = async (c: Context) => {
   const { apiKey } = config.openai;
@@ -11,10 +10,10 @@ export const chatHandler = async (c: Context) => {
   }
 
   try {
-    const body: ChatRequest = await c.req.json();
+    const body = await c.req.json();
     console.log("Received body:", JSON.stringify(body, null, 2));
 
-    const { messages, userLocation } = body;
+    const { messages } = body;
     if (!messages || !Array.isArray(messages)) {
       return c.json({ error: "Invalid messages format" }, 400);
     }
@@ -30,10 +29,10 @@ export const chatHandler = async (c: Context) => {
       tools: {
         web_search_preview: openai.tools.webSearchPreview({
           searchContextSize: "medium",
-          userLocation: userLocation || {
+          userLocation: {
             type: "approximate",
-            city: "San Francisco",
-            region: "California",
+            city: "Tokyo",
+            country: "Japan",
           },
         }),
       },

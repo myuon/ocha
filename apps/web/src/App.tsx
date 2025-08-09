@@ -4,10 +4,14 @@ import { DefaultChatTransport } from "ai";
 
 export default function App() {
   const [message, setMessage] = useState<string>("Loading...");
+  const [userLocation, setUserLocation] = useState<any>(null);
   const { messages, sendMessage } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
     }),
+    body: {
+      userLocation,
+    },
   });
   const [input, setInput] = useState("");
 
@@ -16,6 +20,32 @@ export default function App() {
       .then((r) => r.json())
       .then((d) => setMessage(d.message))
       .catch(() => setMessage("Could not reach API"));
+  }, []);
+
+  // Get user location on component mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // Convert coordinates to approximate location format
+          setUserLocation({
+            type: "approximate",
+            coordinates: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            }
+          });
+        },
+        (error) => {
+          console.log("Geolocation error:", error);
+          // Fallback location is handled on the server side
+        },
+        {
+          timeout: 5000,
+          maximumAge: 300000, // 5 minutes
+        }
+      );
+    }
   }, []);
 
   return (

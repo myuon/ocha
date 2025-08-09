@@ -13,7 +13,7 @@ export const chatHandler = async (c: Context) => {
     const body = await c.req.json();
     console.log("Received body:", JSON.stringify(body, null, 2));
 
-    const { messages } = body;
+    const { messages, userLocation } = body;
     if (!messages || !Array.isArray(messages)) {
       return c.json({ error: "Invalid messages format" }, 400);
     }
@@ -29,7 +29,7 @@ export const chatHandler = async (c: Context) => {
       tools: {
         web_search_preview: openai.tools.webSearchPreview({
           searchContextSize: "medium",
-          userLocation: {
+          userLocation: userLocation || {
             type: "approximate",
             city: "San Francisco",
             region: "California",

@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile for production
 
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 
 # Install workspace dependencies
@@ -14,7 +14,7 @@ COPY . .
 RUN npm run build
 
 
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -29,4 +29,3 @@ COPY --from=builder /app/apps/api/dist apps/api/dist
 EXPOSE 3000
 WORKDIR /app/apps/api
 CMD ["node", "dist/index.js"]
-

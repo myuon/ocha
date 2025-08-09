@@ -62,8 +62,6 @@ export default function App() {
       <div style={{ maxWidth: 800, margin: "0 auto" }}>
         <div
           style={{
-            height: 400,
-            overflowY: "scroll",
             border: "1px solid #ddd",
             borderRadius: 8,
             padding: 16,
@@ -76,18 +74,25 @@ export default function App() {
               Start a conversation with the AI...
             </p>
           )}
-          {messages?.map((message) => (
+{messages?.map((message) => (
             <div
               key={message.id}
               style={{
+                display: "flex",
+                justifyContent: message.role === "user" ? "flex-end" : "flex-start",
                 marginBottom: 16,
-                padding: 12,
-                borderRadius: 8,
-                backgroundColor:
-                  message.role === "user" ? "#e3f2fd" : "#f3e5f5",
               }}
             >
-              <strong
+              <div
+                style={{
+                  maxWidth: "70%",
+                  padding: 12,
+                  borderRadius: 8,
+                  backgroundColor:
+                    message.role === "user" ? "#e3f2fd" : "#f3e5f5",
+                }}
+              >
+                <strong
                 style={{
                   color: message.role === "user" ? "#1976d2" : "#7b1fa2",
                 }}
@@ -113,6 +118,7 @@ export default function App() {
 
                   return null;
                 })}
+              </div>
               </div>
             </div>
           ))}

@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
-import { useChat } from "ai/react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 
 export default function App() {
   const [message, setMessage] = useState<string>("Loading...");
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: "/api/ai/chat",
+  const { messages, sendMessage } = useChat({
+    transport: new DefaultChatTransport({
+      api: "/api/ai/chat",
+    }),
   });
+  const [input, setInput] = useState("");
 
   useEffect(() => {
     fetch("/api/hello")
@@ -34,12 +38,12 @@ export default function App() {
             backgroundColor: "#f9f9f9"
           }}
         >
-          {messages.length === 0 && (
+          {messages?.length === 0 && (
             <p style={{ color: "#666", fontStyle: "italic" }}>
               Start a conversation with the AI...
             </p>
           )}
-          {messages.map((message: any) => (
+          {messages?.map((message) => (
             <div
               key={message.id}
               style={{
@@ -52,35 +56,33 @@ export default function App() {
               <strong style={{ color: message.role === "user" ? "#1976d2" : "#7b1fa2" }}>
                 {message.role === "user" ? "You:" : "AI:"}
               </strong>
-              <p style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap" }}>
-                {message.content}
-              </p>
+              <div style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap" }}>
+                {message.parts?.map((part, index) => {
+                  if (part.type === "text") {
+                    return <span key={index}>{part.text}</span>;
+                  }
+                  return null;
+                })}
+              </div>
             </div>
           ))}
-          {isLoading && (
-            <div
-              style={{
-                marginBottom: 16,
-                padding: 12,
-                borderRadius: 8,
-                backgroundColor: "#f3e5f5",
-              }}
-            >
-              <strong style={{ color: "#7b1fa2" }}>AI:</strong>
-              <p style={{ margin: "8px 0 0 0", fontStyle: "italic", color: "#666" }}>
-                Thinking...
-              </p>
-            </div>
-          )}
         </div>
         
-        <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8 }}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (input.trim()) {
+              sendMessage({ text: input });
+              setInput("");
+            }
+          }}
+          style={{ display: "flex", gap: 8 }}
+        >
           <input
             type="text"
             value={input}
-            onChange={handleInputChange}
+            onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
-            disabled={isLoading}
             style={{
               flex: 1,
               padding: 12,
@@ -91,18 +93,18 @@ export default function App() {
           />
           <button
             type="submit"
-            disabled={isLoading || !input.trim()}
+            disabled={!input.trim()}
             style={{
               padding: "12px 24px",
               borderRadius: 8,
               border: "none",
-              backgroundColor: isLoading || !input.trim() ? "#ccc" : "#1976d2",
+              backgroundColor: !input.trim() ? "#ccc" : "#1976d2",
               color: "white",
               fontSize: 16,
-              cursor: isLoading || !input.trim() ? "not-allowed" : "pointer",
+              cursor: !input.trim() ? "not-allowed" : "pointer",
             }}
           >
-            {isLoading ? "..." : "Send"}
+            Send
           </button>
         </form>
       </div>

@@ -6,7 +6,7 @@ dotenv.config({ path: path.join(process.cwd(), ".env") });
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
-import { streamText } from "ai";
+import { streamText, convertToModelMessages } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 
 // Graceful shutdown
@@ -38,22 +38,30 @@ app.post("/api/ai/chat", async (c) => {
     return c.json({ error: "OPENAI_API_KEY is not set" }, 500);
   }
 
-  const { messages } = await c.req.json();
-  const openai = createOpenAI({ apiKey });
+  try {
+    const body = await c.req.json();
+    console.log("Received body:", JSON.stringify(body, null, 2));
 
-  const result = await streamText({
-    model: openai("gpt-4o-mini"),
-    messages,
-  });
+    const { messages } = body;
+    if (!messages || !Array.isArray(messages)) {
+      return c.json({ error: "Invalid messages format" }, 400);
+    }
 
-  // useChat expects the AI SDK data stream response
-  // Prefer toDataStreamResponse when available
-  // @ts-ignore - depending on SDK version, this exists
-  if (typeof (result as any).toDataStreamResponse === "function") {
-    return (result as any).toDataStreamResponse();
+    // Convert UI messages to model messages
+    const modelMessages = convertToModelMessages(messages);
+
+    const openai = createOpenAI({ apiKey });
+
+    const result = await streamText({
+      model: openai("gpt-4o-mini"),
+      messages: modelMessages,
+    });
+
+    return result.toUIMessageStreamResponse();
+  } catch (error) {
+    console.error("Chat API error:", error);
+    return c.json({ error: "Internal server error" }, 500);
   }
-  // Fallback: text stream response
-  return (result as any).toTextStreamResponse();
 });
 
 // Serve frontend build (production)

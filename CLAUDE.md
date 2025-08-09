@@ -9,7 +9,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Architecture
 
 - **Frontend** (`apps/web`): React 18 + TypeScript + Vite, integrates Vercel AI SDK
-- **Backend** (`apps/api`): Hono + TypeScript + Node.js, serves API and static files in production  
+- **Backend** (`apps/api`): Hono + TypeScript + Node.js with modular architecture
+  - Modular route handlers separated by functionality
+  - Centralized configuration management
+  - Global error handling middleware
+  - Graceful server shutdown utilities
 - **AI Integration**: Uses Vercel AI SDK with OpenAI for chat functionality via `/api/ai/chat`
 - **Static Assets**: Web build output copied to `apps/api/dist/public` for unified deployment
 
@@ -54,9 +58,19 @@ apps/
 │   └── package.json
 ├── api/           # Hono backend  
 │   ├── src/
-│   │   └── index.ts     # Entry point
+│   │   ├── index.ts          # Entry point
+│   │   ├── config/
+│   │   │   └── index.ts      # Configuration management
+│   │   ├── routes/
+│   │   │   ├── health.ts     # Health check endpoint
+│   │   │   ├── api.ts        # Basic API endpoints
+│   │   │   └── chat.ts       # AI chat endpoint
+│   │   ├── middleware/
+│   │   │   └── error.ts      # Global error handling
+│   │   └── utils/
+│   │       └── server.ts     # Server lifecycle management
 │   ├── scripts/
-│   │   └── copy-static.mjs  # Copies web/dist to api/dist/public
+│   │   └── copy-static.mjs   # Copies web/dist to api/dist/public
 │   └── package.json
 └── Dockerfile     # Multi-stage production build
 ```

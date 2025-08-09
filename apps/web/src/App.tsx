@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { UserLocation } from "../../api/src/types/chat";
+import { Markdown } from "./components/Markdown";
+import { ToolDisplay } from "./components/ToolDisplay";
 
 export default function App() {
   const [message, setMessage] = useState<string>("Loading...");
@@ -95,8 +97,26 @@ export default function App() {
               <div style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap" }}>
                 {message.parts?.map((part, index) => {
                   if (part.type === "text") {
-                    return <span key={index}>{part.text}</span>;
+                    return (
+                      <Markdown
+                        key={index}
+                        id={message.id}
+                        content={part.text}
+                      />
+                    );
                   }
+
+                  // Handle tool parts
+                  if (part.type.startsWith("tool-")) {
+                    return (
+                      <ToolDisplay
+                        key={index}
+                        part={part as any}
+                      />
+                    );
+                  }
+
+                  console.warn("Unknown part type:", part);
                   return null;
                 })}
               </div>

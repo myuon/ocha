@@ -9,11 +9,10 @@
     "dev": "concurrently -k -n web,api -c blue,green \"npm:dev:web\" \"npm:dev:api\"",
     "dev:web": "npm run dev -w apps/web",
     "dev:api": "npm run dev -w apps/api",
-    "build": "npm run build -w apps/web && npm run build -w apps/api",
+    "build": "npm run build -w apps/web && npm run build:with-static -w apps/api",
     "start": "npm run start -w apps/api"
   },
   "devDependencies": {
     "concurrently": "^9.0.1"
   }
 }
-

@@ -23,9 +23,19 @@ export const chatHandler = async (c: Context) => {
 
     const openai = createOpenAI({ apiKey });
 
-    const result = await streamText({
+    const result = streamText({
       model: openai("gpt-4o-mini"),
       messages: modelMessages,
+      tools: {
+        web_search_preview: openai.tools.webSearchPreview({
+          searchContextSize: "medium",
+          userLocation: {
+            type: "approximate",
+            city: "San Francisco",
+            region: "California",
+          },
+        }),
+      },
     });
 
     return result.toUIMessageStreamResponse();

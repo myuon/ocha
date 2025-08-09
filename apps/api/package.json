@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "exports": {
+    "./types/*": "./src/types/*"
+  },
   "scripts": {
     "dev": "node scripts/dev-runner.mjs",
     "build": "tsc -p tsconfig.json",

@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
+import { UserLocation } from "../../api/src/types/chat";
 
 export default function App() {
   const [message, setMessage] = useState<string>("Loading...");
-  const [userLocation, setUserLocation] = useState<any>(null);
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const { messages, sendMessage } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
+      body: {
+        userLocation,
+      },
     }),
-    body: {
-      userLocation,
-    },
   });
   const [input, setInput] = useState("");
 
@@ -33,7 +34,7 @@ export default function App() {
             coordinates: {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
-            }
+            },
           });
         },
         (error) => {
@@ -54,18 +55,18 @@ export default function App() {
       <p>{message}</p>
       <p style={{ color: "#666" }}>React + Vite + TypeScript</p>
       <hr style={{ margin: "24px 0" }} />
-      
+
       <h2>AI Chat</h2>
       <div style={{ maxWidth: 800, margin: "0 auto" }}>
-        <div 
-          style={{ 
-            height: 400, 
-            overflowY: "scroll", 
-            border: "1px solid #ddd", 
-            borderRadius: 8, 
-            padding: 16, 
+        <div
+          style={{
+            height: 400,
+            overflowY: "scroll",
+            border: "1px solid #ddd",
+            borderRadius: 8,
+            padding: 16,
             marginBottom: 16,
-            backgroundColor: "#f9f9f9"
+            backgroundColor: "#f9f9f9",
           }}
         >
           {messages?.length === 0 && (
@@ -80,10 +81,15 @@ export default function App() {
                 marginBottom: 16,
                 padding: 12,
                 borderRadius: 8,
-                backgroundColor: message.role === "user" ? "#e3f2fd" : "#f3e5f5",
+                backgroundColor:
+                  message.role === "user" ? "#e3f2fd" : "#f3e5f5",
               }}
             >
-              <strong style={{ color: message.role === "user" ? "#1976d2" : "#7b1fa2" }}>
+              <strong
+                style={{
+                  color: message.role === "user" ? "#1976d2" : "#7b1fa2",
+                }}
+              >
                 {message.role === "user" ? "You:" : "AI:"}
               </strong>
               <div style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap" }}>
@@ -97,7 +103,7 @@ export default function App() {
             </div>
           ))}
         </div>
-        
+
         <form
           onSubmit={(e) => {
             e.preventDefault();

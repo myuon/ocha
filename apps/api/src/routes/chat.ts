@@ -2,6 +2,7 @@ import { Context } from "hono";
 import { streamText, convertToModelMessages } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { config } from "../config/index.js";
+import { ChatRequest, UserLocation } from "../types/chat.js";
 
 export const chatHandler = async (c: Context) => {
   const { apiKey } = config.openai;
@@ -10,7 +11,7 @@ export const chatHandler = async (c: Context) => {
   }
 
   try {
-    const body = await c.req.json();
+    const body: ChatRequest = await c.req.json();
     console.log("Received body:", JSON.stringify(body, null, 2));
 
     const { messages, userLocation } = body;

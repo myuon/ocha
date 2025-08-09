@@ -32,7 +32,7 @@ export const chatHandler = async (c: Context) => {
           userLocation: {
             type: "approximate",
             city: "Tokyo",
-            country: "Japan",
+            country: "JP",
           },
         }),
       },

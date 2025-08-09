@@ -2,7 +2,7 @@ interface ToolPart {
   type: string;
   toolCallId: string;
   state: "call" | "output-available" | "partial" | "error";
-  input: Record<string, unknown>;
+  input?: Record<string, unknown>;
   output?: Record<string, unknown>;
   providerExecuted?: boolean;
 }
@@ -49,7 +49,7 @@ export function ToolDisplay({ part }: ToolDisplayProps) {
     }
   };
 
-  const hasDetails = Object.keys(part.input).length > 0 || part.output;
+  const hasDetails = Object.keys(part.input ?? {}).length > 0 || part.output;
 
   if (!hasDetails) {
     // Simple display when no details to show
@@ -148,7 +148,7 @@ export function ToolDisplay({ part }: ToolDisplayProps) {
       <div
         style={{ padding: "0 12px 12px 12px", borderTop: "1px solid #e0e0e0" }}
       >
-        {Object.keys(part.input).length > 0 && (
+        {Object.keys(part.input ?? {}).length > 0 && (
           <div style={{ marginBottom: 8 }}>
             <strong style={{ color: "#666", fontSize: "0.85em" }}>
               Input:

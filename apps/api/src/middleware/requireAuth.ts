@@ -29,6 +29,14 @@ export const requireAuth = async (c: Context, next: Next) => {
       return c.json({ error: "Missing required user information" }, 401);
     }
 
+    // Check if user is in the allowed users list (if configured)
+    if (config.auth.availableUsers) {
+      if (!config.auth.availableUsers.includes(payload.email)) {
+        console.log(`Access denied for user: ${payload.email}`);
+        return c.json({ error: "Access denied: User not authorized" }, 403);
+      }
+    }
+
     const user: User = {
       id: payload.sub,
       email: payload.email,

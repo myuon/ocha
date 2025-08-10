@@ -1,14 +1,15 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
-import Layout from "../app/routes/layout";
+import Layout, { loader as layoutLoader } from "../app/routes/layout";
 import Home from "../app/routes/home";
-import Thread from "../app/routes/thread";
+import Thread, { loader as threadLoader } from "../app/routes/thread";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Layout />,
+    loader: layoutLoader,
     children: [
       {
         index: true,
@@ -17,6 +18,7 @@ const router = createBrowserRouter([
       {
         path: "threads/:threadId",
         element: <Thread />,
+        loader: threadLoader,
       },
     ],
   },

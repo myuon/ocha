@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useParams } from "react-router-dom";
+import { useParams, useLoaderData } from "react-router-dom";
+import type { LoaderFunctionArgs } from "react-router-dom";
 import { MessageList } from "../../src/components/MessageList";
 
 interface Message {
@@ -13,45 +14,46 @@ interface Message {
   created_at: string;
 }
 
+interface ThreadData {
+  messages: Message[];
+}
+
+export async function loader({ params }: LoaderFunctionArgs): Promise<ThreadData> {
+  const { threadId } = params;
+  
+  // Server-side rendering時はlocalStorageが使用できないため、クライアント専用
+  if (typeof window === 'undefined') {
+    return { messages: [] };
+  }
+
+  const token = localStorage.getItem("auth_token");
+  
+  if (!token || !threadId) {
+    return { messages: [] };
+  }
+
+  try {
+    const response = await fetch(`/api/threads/${threadId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return { messages: data.messages };
+    }
+  } catch (error) {
+    console.error("Error loading thread:", error);
+  }
+
+  return { messages: [] };
+}
+
 export default function Thread() {
+  const { messages: historicalMessages } = useLoaderData<ThreadData>();
   const { threadId } = useParams();
   const [input, setInput] = useState("");
-  const [historicalMessages, setHistoricalMessages] = useState<Message[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-
-  // Load thread history on component mount
-  useEffect(() => {
-    if (!threadId) return;
-
-    const loadThreadHistory = async () => {
-      setIsLoadingHistory(true);
-      const token = localStorage.getItem("auth_token");
-      
-      if (!token) {
-        setIsLoadingHistory(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`/api/threads/${threadId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setHistoricalMessages(data.messages);
-        }
-      } catch (error) {
-        console.error("Error loading thread:", error);
-      } finally {
-        setIsLoadingHistory(false);
-      }
-    };
-
-    loadThreadHistory();
-  }, [threadId]);
 
   const { messages, sendMessage: originalSendMessage } = useChat({
     transport: new DefaultChatTransport({
@@ -83,7 +85,7 @@ export default function Thread() {
       <MessageList
         historicalMessages={historicalMessages}
         currentMessages={messages}
-        isLoadingHistory={isLoadingHistory}
+        isLoadingHistory={false}
         currentThreadId={threadId || null}
         input={input}
         onInputChange={setInput}

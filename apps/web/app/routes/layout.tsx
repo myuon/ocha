@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { Outlet, useLocation, useLoaderData } from "react-router-dom";
 import { GoogleSignIn } from "../../src/components/GoogleSignIn";
 import { ThreadList } from "../../src/components/ThreadList";
 
@@ -18,89 +18,77 @@ interface Thread {
   updated_at: string;
 }
 
+interface LayoutData {
+  user: User | null;
+  threads: Thread[];
+}
+
+export async function loader(): Promise<LayoutData> {
+  // Server-side rendering時はlocalStorageが使用できないため、クライアント専用
+  if (typeof window === 'undefined') {
+    return { user: null, threads: [] };
+  }
+
+  const token = localStorage.getItem("auth_token");
+  
+  if (!token) {
+    return { user: null, threads: [] };
+  }
+
+  try {
+    // Verify token
+    const authResponse = await fetch("/api/auth/verify", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!authResponse.ok) {
+      localStorage.removeItem("auth_token");
+      return { user: null, threads: [] };
+    }
+
+    const authData = await authResponse.json();
+    
+    // Fetch threads
+    const threadsResponse = await fetch("/api/threads", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    let threads: Thread[] = [];
+    if (threadsResponse.ok) {
+      const threadsData = await threadsResponse.json();
+      threads = threadsData.threads;
+    }
+
+    return { user: authData.user, threads };
+  } catch (error) {
+    console.error("Layout loader error:", error);
+    localStorage.removeItem("auth_token");
+    return { user: null, threads: [] };
+  }
+}
+
 export default function Layout() {
+  const { user, threads } = useLoaderData<LayoutData>();
   const location = useLocation();
-  const [user, setUser] = useState<User | null>(null);
-  const [threads, setThreads] = useState<Thread[]>([]);
   const [authError, setAuthError] = useState<string | null>(null);
   
   // Extract threadId from current path
   const threadMatch = location.pathname.match(/^\/threads\/(.+)$/);
   const currentThreadId = threadMatch ? threadMatch[1] : null;
 
-  // Fetch user and threads on component mount
-  useEffect(() => {
-    const checkExistingAuth = async () => {
-      const token = localStorage.getItem("auth_token");
-      if (!token) return;
-
-      try {
-        // Verify token
-        const authResponse = await fetch("/api/auth/verify", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!authResponse.ok) {
-          localStorage.removeItem("auth_token");
-          return;
-        }
-
-        const authData = await authResponse.json();
-        setUser(authData.user);
-        
-        // Fetch threads
-        const threadsResponse = await fetch("/api/threads", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (threadsResponse.ok) {
-          const threadsData = await threadsResponse.json();
-          setThreads(threadsData.threads);
-        }
-      } catch (error) {
-        console.error("Layout loader error:", error);
-        localStorage.removeItem("auth_token");
-      }
-    };
-
-    checkExistingAuth();
-  }, []);
-
   const handleSignIn = async (userData: User) => {
-    setUser(userData);
-    setAuthError(null);
-    
-    // Fetch threads after sign in
-    const token = localStorage.getItem("auth_token");
-    if (token) {
-      try {
-        const response = await fetch("/api/threads", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setThreads(data.threads);
-        }
-      } catch (error) {
-        console.error("Error fetching threads:", error);
-      }
-    }
+    // Reload the page to trigger the loader with new auth state
+    window.location.reload();
   };
 
   const handleSignOut = () => {
     localStorage.removeItem("auth_token");
-    setUser(null);
-    setThreads([]);
-    setAuthError(null);
     window.location.href = "/";
   };
 

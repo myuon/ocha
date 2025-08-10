@@ -8,6 +8,7 @@ import { googleAuthHandler } from "./routes/auth.js";
 import { chatHandler } from "./routes/chat.js";
 import { healthHandler } from "./routes/health.js";
 import { verifyAuthHandler } from "./routes/verifyAuth.js";
+import threadsRoutes from "./routes/threads.js";
 import { setupGracefulShutdown } from "./utils/server.js";
 
 const app = new Hono();
@@ -22,6 +23,9 @@ app.get("/health", healthHandler);
 app.post("/api/auth/google", googleAuthHandler);
 app.post("/api/auth/verify", requireAuth, verifyAuthHandler);
 app.post("/api/ai/chat", requireAuth, chatHandler);
+
+// Thread routes
+app.route("/api/threads", threadsRoutes);
 
 // Serve frontend build (production)
 // assets under dist/public (copied during build)

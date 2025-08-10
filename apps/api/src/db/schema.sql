@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS messages (
   id TEXT PRIMARY KEY,
   thread_id TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
-  content TEXT NOT NULL,
+  content TEXT, -- Keep for backwards compatibility
+  parts TEXT, -- Store JSON array of message parts
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (thread_id) REFERENCES threads (id) ON DELETE CASCADE
 );

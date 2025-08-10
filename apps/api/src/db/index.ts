@@ -17,7 +17,8 @@ export interface Message {
   id: string;
   thread_id: string;
   role: 'user' | 'assistant' | 'system';
-  content: string;
+  content?: string; // Optional for backwards compatibility
+  parts?: string; // JSON string of message parts
   created_at: string;
 }
 
@@ -46,6 +47,17 @@ class Database {
           const statements = schema.split(';').filter(s => s.trim());
           for (const statement of statements) {
             await this.run(statement);
+          }
+          
+          // Migration: Add parts column if it doesn't exist
+          try {
+            await this.run('ALTER TABLE messages ADD COLUMN parts TEXT');
+            console.log('Added parts column to messages table');
+          } catch (migrationError: any) {
+            // Column already exists or other error - that's okay
+            if (!migrationError.message?.includes('duplicate column name')) {
+              console.warn('Migration warning:', migrationError.message);
+            }
           }
           
           resolve();
@@ -116,18 +128,20 @@ class Database {
     id: string,
     threadId: string,
     role: 'user' | 'assistant' | 'system',
-    content: string
+    content?: string,
+    parts?: any[]
   ): Promise<Message> {
     // Update thread's updated_at timestamp
     await this.run('UPDATE threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', [threadId]);
     
     const sql = `
-      INSERT INTO messages (id, thread_id, role, content) 
-      VALUES (?, ?, ?, ?) 
+      INSERT INTO messages (id, thread_id, role, content, parts) 
+      VALUES (?, ?, ?, ?, ?) 
       RETURNING *
     `;
     
-    const message = await this.get<Message>(sql, [id, threadId, role, content]);
+    const partsJson = parts ? JSON.stringify(parts) : null;
+    const message = await this.get<Message>(sql, [id, threadId, role, content, partsJson]);
     if (!message) throw new Error('Failed to add message');
     
     return message;

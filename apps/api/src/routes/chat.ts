@@ -40,7 +40,10 @@ export const chatHandler = async (c: Context) => {
         const lastMessage = messages[messages.length - 1];
         if (lastMessage.role === 'user') {
           const messageId = nanoid();
-          await db.addMessage(messageId, threadId, 'user', lastMessage.content);
+          // Save both content and parts for full message preservation
+          const content = lastMessage.content || (lastMessage.parts ? 
+            lastMessage.parts.filter((part: any) => part.type === 'text').map((part: any) => part.text).join('') : '');
+          await db.addMessage(messageId, threadId, 'user', content, lastMessage.parts);
           console.log(`Saved user message to thread ${threadId}`);
         }
       } catch (error) {
@@ -67,9 +70,9 @@ export const chatHandler = async (c: Context) => {
           },
         }),
       },
-      async onFinish({ text, finishReason }) {
+      async onFinish({ text, finishReason, usage, response }) {
         // Save conversation to database if threadId is provided
-        if (threadId && text) {
+        if (threadId) {
           try {
             const { getDatabase } = await import("../db/index.js");
             const db = await getDatabase();
@@ -77,8 +80,19 @@ export const chatHandler = async (c: Context) => {
             // Generate unique message ID
             const messageId = nanoid();
             
-            // Save the assistant's response
-            await db.addMessage(messageId, threadId, 'assistant', text);
+            // Create parts array for assistant message
+            const parts = [];
+            if (text) {
+              parts.push({ type: 'text', text });
+            }
+            
+            // Note: Tool calls and results are handled automatically by the AI SDK
+            // and will be included in the streaming response to the client.
+            // For now, we'll just save the text content. Tool information
+            // can be added later when we have access to the full response structure.
+            
+            // Save the assistant's response with parts
+            await db.addMessage(messageId, threadId, 'assistant', text, parts.length > 0 ? parts : undefined);
             
             console.log(`Saved assistant message to thread ${threadId}`);
           } catch (error) {

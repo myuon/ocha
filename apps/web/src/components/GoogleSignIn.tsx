@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { CLIENT_ID } from "../config";
 
 interface User {
   id: string;
@@ -52,7 +53,7 @@ export function GoogleSignIn({ onSignIn, onError }: GoogleSignInProps) {
 
     // Initialize Google Sign-In
     window.google.accounts.id.initialize({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      client_id: CLIENT_ID,
       callback: handleCredentialResponse,
     });
 

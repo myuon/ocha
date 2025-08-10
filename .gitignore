@@ -31,3 +31,5 @@ Thumbs.db
 
 .env
 env-vars.prod.yaml
+
+conversations.db

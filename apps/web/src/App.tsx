@@ -1,6 +1,6 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GoogleSignIn } from "./components/GoogleSignIn";
 import { Markdown } from "./components/Markdown";
 import { ToolDisplay } from "./components/ToolDisplay";
@@ -25,8 +25,9 @@ interface User {
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const currentThreadIdRef = useRef<string | null>(null);
 
-  const { messages, sendMessage } = useChat({
+  const { messages, sendMessage: originalSendMessage } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
       headers: () => {
@@ -37,9 +38,53 @@ export default function App() {
         }
         return headers;
       },
+      body: () => ({
+        threadId: currentThreadIdRef.current,
+      }),
     }),
   });
   const [input, setInput] = useState("");
+
+  // Create a new thread
+  const createThread = async (): Promise<string> => {
+    const token = localStorage.getItem("auth_token");
+    const response = await fetch("/api/threads", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}), // No title for now
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to create thread");
+    }
+
+    const data = await response.json();
+    return data.thread.id;
+  };
+
+  // Custom sendMessage that handles thread creation
+  const sendMessage = async (message: { text: string }) => {
+    try {
+      // If no current thread, create one
+      if (!currentThreadIdRef.current) {
+        const threadId = await createThread();
+        currentThreadIdRef.current = threadId;
+        console.log("Created new thread:", threadId);
+        
+        // Update URL to include threadId
+        window.history.pushState(null, "", `/threads/${threadId}`);
+      }
+
+      // Send the message using the original function
+      originalSendMessage(message);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setAuthError("Failed to send message. Please try again.");
+    }
+  };
 
   const handleSignIn = (userData: User) => {
     setUser(userData);
@@ -51,6 +96,9 @@ export default function App() {
     localStorage.removeItem("auth_token");
     setUser(null);
     setAuthError(null);
+    currentThreadIdRef.current = null; // Reset thread on sign out
+    // Reset URL to home
+    window.history.pushState(null, "", "/");
   };
 
   const handleAuthError = (error: string) => {
@@ -58,8 +106,17 @@ export default function App() {
     console.error("Auth error:", error);
   };
 
-  // Check for existing token on mount
+  // Check for existing token on mount and URL threadId
   useEffect(() => {
+    // Check for threadId in URL
+    const path = window.location.pathname;
+    const threadMatch = path.match(/^\/threads\/(.+)$/);
+    if (threadMatch) {
+      const threadId = threadMatch[1];
+      currentThreadIdRef.current = threadId;
+      console.log("Loaded thread from URL:", threadId);
+    }
+
     const checkExistingAuth = async () => {
       const token = localStorage.getItem("auth_token");
       if (token) {

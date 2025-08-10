@@ -56,8 +56,7 @@ export const googleAuthHandler = async (c: Context) => {
     return c.json({
       success: true,
       user,
-      // For demo purposes, we'll just return the user data
-      // In production, consider using sessions or JWT
+      token: credential, // Return the Google JWT token for client storage
     });
   } catch (error) {
     console.error("Google auth error:", error);

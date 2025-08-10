@@ -3,9 +3,11 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { config } from "./config/index.js";
 import { errorHandler } from "./middleware/error.js";
+import { requireAuth } from "./middleware/requireAuth.js";
 import { googleAuthHandler } from "./routes/auth.js";
 import { chatHandler } from "./routes/chat.js";
 import { healthHandler } from "./routes/health.js";
+import { verifyAuthHandler } from "./routes/verifyAuth.js";
 import { setupGracefulShutdown } from "./utils/server.js";
 
 const app = new Hono();
@@ -18,7 +20,8 @@ app.get("/health", healthHandler);
 
 // API routes
 app.post("/api/auth/google", googleAuthHandler);
-app.post("/api/ai/chat", chatHandler);
+app.post("/api/auth/verify", requireAuth, verifyAuthHandler);
+app.post("/api/ai/chat", requireAuth, chatHandler);
 
 // Serve frontend build (production)
 // assets under dist/public (copied during build)

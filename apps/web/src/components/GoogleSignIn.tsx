@@ -36,6 +36,10 @@ export function GoogleSignIn({ onSignIn, onError }: GoogleSignInProps) {
         const data = await result.json();
 
         if (result.ok && data.success) {
+          // Store JWT token in localStorage
+          if (data.token) {
+            localStorage.setItem("auth_token", data.token);
+          }
           onSignIn(data.user);
         } else {
           onError(data.error || "Authentication failed");

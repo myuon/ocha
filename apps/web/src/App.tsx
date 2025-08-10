@@ -24,7 +24,6 @@ export default function App() {
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", padding: 24 }}>
       <h1>Ocha</h1>
-      <p style={{ color: "#666" }}>React + Vite + TypeScript</p>
       <hr style={{ margin: "24px 0" }} />
 
       <h2>AI Chat</h2>

@@ -22,7 +22,7 @@
     "ai": "^5.0.8",
     "dotenv": "^17.2.1",
     "hono": "^4.5.4",
-    "zod": "^4.0.16"
+    "zod": "^4.0.17"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.1.4",

@@ -43,6 +43,7 @@ export default function App() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [historicalMessages, setHistoricalMessages] = useState<Message[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [threadTitles, setThreadTitles] = useState<Record<string, string>>({});
   const currentThreadIdRef = useRef<string | null>(null);
 
   const { messages, sendMessage: originalSendMessage } = useChat({
@@ -235,60 +236,74 @@ export default function App() {
   }, []);
 
   // Helper function to render messages (both current and historical)
-  const renderMessage = (message: any) => (
-    <div
-      key={message.id}
-      style={{
-        display: "flex",
-        justifyContent: message.role === "user" ? "flex-end" : "flex-start",
-        marginBottom: 16,
-      }}
-    >
+  const renderMessage = (message: any) => {
+    let parts = message.parts;
+    
+    // If parts is a string (from database), parse it as JSON
+    if (typeof parts === 'string') {
+      try {
+        parts = JSON.parse(parts);
+      } catch (error) {
+        console.error('Failed to parse message parts:', error);
+        parts = null;
+      }
+    }
+    
+    return (
       <div
+        key={message.id}
         style={{
-          maxWidth: "70%",
-          padding: 12,
-          borderRadius: 8,
-          backgroundColor: message.role === "user" ? "#e3f2fd" : "#f3e5f5",
+          display: "flex",
+          justifyContent: message.role === "user" ? "flex-end" : "flex-start",
+          marginBottom: 16,
         }}
       >
-        <strong
+        <div
           style={{
-            color: message.role === "user" ? "#1976d2" : "#7b1fa2",
+            maxWidth: "70%",
+            padding: 12,
+            borderRadius: 8,
+            backgroundColor: message.role === "user" ? "#e3f2fd" : "#f3e5f5",
           }}
         >
-          {message.role === "user" ? "You:" : "AI:"}
-        </strong>
-        <div style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap" }}>
-          {message.parts ? (
-            message.parts.map((part: any, index: number) => {
-              if (part.type === "text") {
-                return (
-                  <Markdown
-                    key={`${message.id}-text-${index}`}
-                    id={message.id}
-                    content={part.text}
-                  />
-                );
-              }
-              if (part.type.startsWith("tool-")) {
-                return (
-                  <ToolDisplay
-                    key={`${message.id}-tool-${index}`}
-                    part={part as ToolPart}
-                  />
-                );
-              }
-              return null;
-            })
-          ) : (
-            // For historical messages, content is just a string
-            <div>{message.content}</div>
-          )}
+          <strong
+            style={{
+              color: message.role === "user" ? "#1976d2" : "#7b1fa2",
+            }}
+          >
+            {message.role === "user" ? "You:" : "AI:"}
+          </strong>
+          <div style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap" }}>
+            {parts && Array.isArray(parts) ? (
+              parts.map((part: any, index: number) => {
+                if (part.type === "text") {
+                  return (
+                    <Markdown
+                      key={`${message.id}-text-${index}`}
+                      id={message.id}
+                      content={part.text}
+                    />
+                  );
+                }
+                if (part.type && part.type.startsWith("tool-")) {
+                  return (
+                    <ToolDisplay
+                      key={`${message.id}-tool-${index}`}
+                      part={part as ToolPart}
+                    />
+                  );
+                }
+                return null;
+              })
+            ) : (
+              // Fallback to content for backwards compatibility or when parts is not available
+              <div>{message.content || 'No content available'}</div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", height: "100vh", display: "flex" }}>

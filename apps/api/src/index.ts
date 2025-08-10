@@ -3,6 +3,7 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { config } from "./config/index.js";
 import { errorHandler } from "./middleware/error.js";
+import { googleAuthHandler } from "./routes/auth.js";
 import { chatHandler } from "./routes/chat.js";
 import { healthHandler } from "./routes/health.js";
 import { setupGracefulShutdown } from "./utils/server.js";
@@ -16,6 +17,7 @@ app.use("*", errorHandler);
 app.get("/health", healthHandler);
 
 // API routes
+app.post("/api/auth/google", googleAuthHandler);
 app.post("/api/ai/chat", chatHandler);
 
 // Serve frontend build (production)

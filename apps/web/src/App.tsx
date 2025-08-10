@@ -1,6 +1,7 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useState } from "react";
+import { GoogleSignIn } from "./components/GoogleSignIn";
 import { Markdown } from "./components/Markdown";
 import { ToolDisplay } from "./components/ToolDisplay";
 
@@ -13,7 +14,18 @@ interface ToolPart {
   providerExecuted?: boolean;
 }
 
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  picture?: string;
+  verified_email: boolean;
+}
+
 export default function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+
   const { messages, sendMessage } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
@@ -21,9 +33,68 @@ export default function App() {
   });
   const [input, setInput] = useState("");
 
+  const handleSignIn = (userData: User) => {
+    setUser(userData);
+    setAuthError(null);
+    console.log("User signed in:", userData);
+  };
+
+  const handleSignOut = () => {
+    setUser(null);
+    setAuthError(null);
+  };
+
+  const handleAuthError = (error: string) => {
+    setAuthError(error);
+    console.error("Auth error:", error);
+  };
+
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", padding: 24 }}>
-      <h1>Ocha</h1>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 24,
+        }}
+      >
+        <h1>Ocha</h1>
+        {user ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {user.picture && (
+              <img
+                src={user.picture}
+                alt="Profile"
+                style={{ width: 32, height: 32, borderRadius: "50%" }}
+              />
+            )}
+            <span>Welcome, {user.name}!</span>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              style={{
+                padding: "8px 16px",
+                borderRadius: 4,
+                border: "1px solid #ddd",
+                backgroundColor: "white",
+                cursor: "pointer",
+              }}
+            >
+              Sign Out
+            </button>
+          </div>
+        ) : (
+          <div>
+            <GoogleSignIn onSignIn={handleSignIn} onError={handleAuthError} />
+            {authError && (
+              <p style={{ color: "red", marginTop: 8, fontSize: "0.9em" }}>
+                {authError}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
       <hr style={{ margin: "24px 0" }} />
 
       <h2>AI Chat</h2>

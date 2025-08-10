@@ -26,6 +26,7 @@ RUN npm install --omit=dev --no-audit --no-fund --prefix apps/api \
 # Copy built API (includes static frontend in dist/public)
 COPY --from=builder /app/apps/api/dist apps/api/dist
 
-EXPOSE 3000
+# Cloud Run uses PORT environment variable
+EXPOSE ${PORT:-3000}
 WORKDIR /app/apps/api
 CMD ["node", "dist/index.js"]

@@ -1,0 +1,16 @@
+# Cloud Run environment variables template
+# Copy this file to env-vars.prod.yaml and set your actual values
+# Then run: gcloud run services update ocha --env-vars-file env-vars.prod.yaml
+
+# Required environment variables for Cloud Run deployment
+NODE_ENV: "production"
+PORT: "3000"
+
+# AI Service Configuration  
+OPENAI_API_KEY: "your-openai-api-key-here"
+
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID: "your-google-client-id.apps.googleusercontent.com"
+
+# Optional: Restrict access to specific users (comma-separated emails)
+# AVAILABLE_USERS: "admin@yourcompany.com,user@yourcompany.com"

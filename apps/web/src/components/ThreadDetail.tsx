@@ -1,0 +1,97 @@
+import { MessageList } from "./MessageList";
+
+interface Message {
+  id: string;
+  thread_id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  parts?: any;
+  created_at: string;
+}
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  picture?: string;
+  verified_email: boolean;
+}
+
+interface ThreadDetailProps {
+  user: User;
+  historicalMessages: Message[];
+  currentMessages: any[];
+  isLoadingHistory: boolean;
+  currentThreadId: string | null;
+  input: string;
+  onInputChange: (value: string) => void;
+  onSendMessage: (message: { text: string }) => void;
+  onSignOut: () => void;
+  authError: string | null;
+}
+
+export function ThreadDetail({
+  user,
+  historicalMessages,
+  currentMessages,
+  isLoadingHistory,
+  currentThreadId,
+  input,
+  onInputChange,
+  onSendMessage,
+  onSignOut,
+  authError,
+}: ThreadDetailProps) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      {/* Header */}
+      <div
+        style={{
+          padding: 16,
+          borderBottom: "1px solid #ddd",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <h1 style={{ margin: 0 }}>Ocha</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {user.picture && (
+            <img
+              src={user.picture}
+              alt="Profile"
+              style={{ width: 32, height: 32, borderRadius: "50%" }}
+            />
+          )}
+          <span>Welcome, {user.name}!</span>
+          <button
+            type="button"
+            onClick={onSignOut}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 4,
+              border: "1px solid #ddd",
+              backgroundColor: "white",
+              cursor: "pointer",
+            }}
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+
+      {/* Chat Content */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <MessageList
+          historicalMessages={historicalMessages}
+          currentMessages={currentMessages}
+          isLoadingHistory={isLoadingHistory}
+          currentThreadId={currentThreadId}
+          input={input}
+          onInputChange={onInputChange}
+          onSendMessage={onSendMessage}
+        />
+      </div>
+    </div>
+  );
+}

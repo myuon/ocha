@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { useLoaderData, useParams } from "react-router-dom";
 import { MessageList } from "../../src/components/MessageList";
+import { useAuth } from "../../src/hooks/useAuth";
 
 interface ThreadData {
   messages: Message[];
@@ -34,51 +35,54 @@ export async function loader({ params }: LoaderFunctionArgs): Promise<ThreadData
     if (response.ok) {
       const data = await response.json();
       return { messages: data.messages };
+    } else {
+      console.error("Failed to fetch thread messages");
+      return { messages: [] };
     }
   } catch (error) {
-    console.error("Error loading thread:", error);
+    console.error("Error loading thread messages:", error);
+    return { messages: [] };
   }
-
-  return { messages: [] };
 }
 
 export default function Thread() {
-  const { messages: historicalMessages } = useLoaderData<ThreadData>();
-  const { threadId } = useParams();
+  const { threadId } = useParams<{ threadId: string }>();
+  const threadData = useLoaderData() as ThreadData;
   const [input, setInput] = useState("");
+  const { getAuthHeaders } = useAuth();
 
-  const { messages, sendMessage: originalSendMessage } = useChat({
+  const { messages, sendMessage } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
-      headers: () => {
-        const token = localStorage.getItem("auth_token");
-        const headers: Record<string, string> = {};
-        if (token) {
-          headers.Authorization = `Bearer ${token}`;
-        }
-        return headers;
-      },
+      headers: getAuthHeaders,
       body: () => ({
-        threadId: threadId,
+        threadId: threadId || null,
       }),
     }),
   });
 
-  const sendMessage = async (message: { text: string }) => {
-    try {
-      originalSendMessage(message);
-    } catch (error) {
-      console.error("Error sending message:", error);
-    }
-  };
+  if (!threadId) {
+    return (
+      <div style={{
+        flex: 1,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        fontSize: "18px",
+        color: "#666"
+      }}>
+        Thread not found
+      </div>
+    );
+  }
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       <MessageList
-        historicalMessages={historicalMessages}
-        currentMessages={messages as Message[]}
+        historicalMessages={threadData.messages} // From loader
+        currentMessages={messages as Message[]} // From useChat
         isLoadingHistory={false}
-        currentThreadId={threadId || null}
+        currentThreadId={threadId}
         input={input}
         onInputChange={setInput}
         onSendMessage={sendMessage}

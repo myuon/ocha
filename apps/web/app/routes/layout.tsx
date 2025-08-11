@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Outlet, useLoaderData, useLocation } from "react-router-dom";
 import { GoogleSignIn } from "../../src/components/GoogleSignIn";
 import { ThreadList } from "../../src/components/ThreadList";
+import { useAuth } from "../../src/hooks/useAuth";
 
 interface LayoutData {
   user: User | null;
@@ -53,63 +54,68 @@ export async function loader(): Promise<LayoutData> {
 
     return { user: authData.user, threads };
   } catch (error) {
-    console.error("Layout loader error:", error);
+    console.error("Auth/threads loading error:", error);
     localStorage.removeItem("auth_token");
     return { user: null, threads: [] };
   }
 }
 
 export default function Layout() {
-  const { user, threads } = useLoaderData<LayoutData>();
+  const initialData = useLoaderData() as LayoutData;
   const location = useLocation();
-  const [authError, setAuthError] = useState<string | null>(null);
+  const { user, signIn, signOut, setAuthError } = useAuth();
   
-  // Extract threadId from current path
-  const threadMatch = location.pathname.match(/^\/threads\/(.+)$/);
-  const currentThreadId = threadMatch ? threadMatch[1] : null;
+  // Use loader data as initial state, but let useAuth manage auth state
+  const currentUser = user || initialData.user;
+  const threads = initialData.threads; // loader data for initial threads
+  
+  const [currentThreadId, setCurrentThreadId] = useState<string | null>(() => {
+    // Extract thread ID from URL path
+    const match = location.pathname.match(/^\/threads\/(.+)$/);
+    return match ? match[1] : null;
+  });
 
   const handleSignIn = async (userData: User) => {
-    // Reload the page to trigger the loader with new auth state
+    signIn(userData);
+    // Reload the page to get fresh data
     window.location.reload();
   };
 
   const handleSignOut = () => {
-    localStorage.removeItem("auth_token");
+    signOut();
+    setCurrentThreadId(null);
+    // Reload to clear all data
     window.location.href = "/";
   };
 
   const handleAuthError = (error: string) => {
     setAuthError(error);
-    console.error("Auth error:", error);
-  };
-
-  const handleNewThread = () => {
-    window.location.href = "/";
   };
 
   const handleThreadSelect = (threadId: string) => {
+    setCurrentThreadId(threadId);
     window.location.href = `/threads/${threadId}`;
   };
 
-  return (
-    <div style={{ fontFamily: "system-ui, sans-serif", height: "100vh", display: "flex" }}>
-      {/* Sidebar */}
-      {user && (
-        <ThreadList
-          threads={threads}
-          currentThreadId={currentThreadId}
-          onThreadSelect={handleThreadSelect}
-          onNewThread={handleNewThread}
-        />
-      )}
+  const handleNewThread = () => {
+    setCurrentThreadId(null);
+    window.location.href = "/";
+  };
 
-      {/* Main Content */}
-      {!user ? (
+  return (
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      {!currentUser ? (
         <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-          {/* Header for non-authenticated users */}
           <div
             style={{
-              padding: 16,
+              padding: 20,
               borderBottom: "1px solid #ddd",
               display: "flex",
               justifyContent: "space-between",
@@ -119,80 +125,64 @@ export default function Layout() {
             <h1 style={{ margin: 0 }}>Ocha</h1>
             <div>
               <GoogleSignIn onSignIn={handleSignIn} onError={handleAuthError} />
-              {authError && (
-                <p style={{ color: "red", marginTop: 8, fontSize: "0.9em" }}>
-                  {authError}
-                </p>
-              )}
             </div>
           </div>
-          
-          {/* Sign-in prompt */}
+
           <div
             style={{
               flex: 1,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: 24,
+              fontSize: "1.2em",
+              color: "#666",
             }}
           >
-            <div
-              style={{
-                textAlign: "center",
-                backgroundColor: "#f9f9f9",
-                borderRadius: 8,
-                border: "1px solid #e0e0e0",
-                padding: 32,
-                maxWidth: 400,
-              }}
-            >
-              <p style={{ color: "#666", fontSize: "1.1em", marginBottom: 16 }}>
-                Please sign in with Google to start chatting with the AI
-              </p>
-            </div>
+            Please sign in to continue
           </div>
         </div>
       ) : (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-          {/* Header */}
-          <div
-            style={{
-              padding: 16,
-              borderBottom: "1px solid #ddd",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <h1 style={{ margin: 0 }}>Ocha</h1>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              {user.picture && (
-                <img
-                  src={user.picture}
-                  alt="Profile"
-                  style={{ width: 32, height: 32, borderRadius: "50%" }}
-                />
-              )}
-              <span>Welcome, {user.name}!</span>
-              <button
-                type="button"
-                onClick={handleSignOut}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 4,
-                  border: "1px solid #ddd",
-                  backgroundColor: "white",
-                  cursor: "pointer",
-                }}
-              >
-                Sign Out
-              </button>
+        <div style={{ flex: 1, display: "flex" }}>
+          <ThreadList
+            threads={threads}
+            currentThreadId={currentThreadId}
+            onThreadSelect={handleThreadSelect}
+            onNewThread={handleNewThread}
+          />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            {/* Header */}
+            <div
+              style={{
+                padding: 20,
+                borderBottom: "1px solid #ddd",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <h1 style={{ margin: 0 }}>Ocha</h1>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <span style={{ fontSize: "0.9em", color: "#666" }}>
+                  {currentUser.name} ({currentUser.email})
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: 4,
+                    border: "1px solid #ddd",
+                    backgroundColor: "white",
+                    cursor: "pointer",
+                    fontSize: 14,
+                  }}
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
+            <Outlet />
           </div>
-
-          {/* Page Content */}
-          <Outlet />
         </div>
       )}
     </div>

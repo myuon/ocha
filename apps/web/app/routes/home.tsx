@@ -3,37 +3,37 @@ import type { Message } from "@ocha/types";
 import { DefaultChatTransport } from "ai";
 import { useState } from "react";
 import { MessageList } from "../../src/components/MessageList";
+import { useAuth } from "../../src/hooks/useAuth";
+import { useThreads } from "../../src/hooks/useThreads";
 
 export default function Home() {
   const [input, setInput] = useState("");
+  const { getAuthHeaders } = useAuth();
+  const { createThread } = useThreads(); // SWR for thread creation (auxiliary)
 
   const { messages, sendMessage: originalSendMessage } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
-      headers: () => {
-        const token = localStorage.getItem("auth_token");
-        const headers: Record<string, string> = {};
-        if (token) {
-          headers.Authorization = `Bearer ${token}`;
-        }
-        return headers;
-      },
+      headers: getAuthHeaders,
       body: () => ({
         threadId: null, // New thread
       }),
     }),
   });
 
-  // Custom sendMessage that handles thread creation
+  // Custom sendMessage that handles thread creation and navigation
   const sendMessage = async (message: { text: string }) => {
     try {
-      // Send the message using the original function
-      originalSendMessage(message);
+      // Create a new thread first using SWR (auxiliary usage)
+      const threadId = await createThread();
       
-      // After sending, we'll need to handle the thread creation response
-      // This might require some additional logic to redirect to the new thread
+      // Store the pending message in sessionStorage to send after navigation
+      sessionStorage.setItem('pendingMessage', message.text);
+      
+      // Navigate to the new thread page
+      window.location.href = `/threads/${threadId}`;
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Error creating thread:", error);
     }
   };
 

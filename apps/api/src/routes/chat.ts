@@ -142,7 +142,7 @@ const chatRoutes = app.post(
             },
           }),
         },
-        async onFinish({ text, toolCalls, toolResults }) {
+        async onFinish({ text, toolResults }) {
           // Save conversation to database if threadId is provided
           if (threadId) {
             try {

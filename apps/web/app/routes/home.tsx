@@ -2,12 +2,14 @@ import { useChat } from "@ai-sdk/react";
 import type { Message } from "@ocha/types";
 import { DefaultChatTransport } from "ai";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { MessageList } from "../../src/components/MessageList";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useThreads } from "../../src/hooks/useThreads";
 
 export default function Home() {
   const [input, setInput] = useState("");
+  const navigate = useNavigate();
   const { getAuthHeaders } = useAuth();
   const { createThread } = useThreads(); // SWR for thread creation (auxiliary)
 
@@ -31,7 +33,7 @@ export default function Home() {
       sessionStorage.setItem('pendingMessage', message.text);
       
       // Navigate to the new thread page
-      window.location.href = `/threads/${threadId}`;
+      navigate(`/threads/${threadId}`);
     } catch (error) {
       console.error("Error creating thread:", error);
     }

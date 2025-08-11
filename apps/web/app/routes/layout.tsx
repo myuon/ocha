@@ -1,6 +1,6 @@
 import type { Thread, User } from "@ocha/types";
 import { useState } from "react";
-import { Outlet, useLoaderData, useLocation } from "react-router-dom";
+import { Outlet, useLoaderData, useLocation, useNavigate } from "react-router-dom";
 import { GoogleSignIn } from "../../src/components/GoogleSignIn";
 import { ThreadList } from "../../src/components/ThreadList";
 import { useAuth } from "../../src/hooks/useAuth";
@@ -63,6 +63,7 @@ export async function loader(): Promise<LayoutData> {
 export default function Layout() {
   const initialData = useLoaderData() as LayoutData;
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signIn, signOut, setAuthError } = useAuth();
   
   // Use loader data as initial state, but let useAuth manage auth state
@@ -84,8 +85,9 @@ export default function Layout() {
   const handleSignOut = () => {
     signOut();
     setCurrentThreadId(null);
-    // Reload to clear all data
-    window.location.href = "/";
+    // Navigate to home and reload to clear all data
+    navigate("/");
+    window.location.reload();
   };
 
   const handleAuthError = (error: string) => {
@@ -94,12 +96,12 @@ export default function Layout() {
 
   const handleThreadSelect = (threadId: string) => {
     setCurrentThreadId(threadId);
-    window.location.href = `/threads/${threadId}`;
+    navigate(`/threads/${threadId}`);
   };
 
   const handleNewThread = () => {
     setCurrentThreadId(null);
-    window.location.href = "/";
+    navigate("/");
   };
 
   return (

@@ -1,11 +1,13 @@
 import { useChat } from "@ai-sdk/react";
-import type { Message, Thread, User } from "@ocha/types";
+import type { Message, User } from "@ocha/types";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useRef, useState } from "react";
 import { GoogleSignIn } from "./components/GoogleSignIn";
 import { ThreadDetail } from "./components/ThreadDetail";
 import { ThreadList } from "./components/ThreadList";
 import { useAuth } from "./hooks/useAuth";
+import { useThreads } from "./hooks/useThreads";
+import { useThreadHistory } from "./hooks/useThreadHistory";
 
 export default function App() {
   const {
@@ -17,13 +19,10 @@ export default function App() {
     setAuthError,
     getAuthHeaders,
   } = useAuth();
-  const [threads, setThreads] = useState<Thread[]>([]);
-  const [historicalMessages, setHistoricalMessages] = useState<Message[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [_threadTitles, _setThreadTitles] = useState<Record<string, string>>(
-    {}
-  );
+  
   const currentThreadIdRef = useRef<string | null>(null);
+  const { threads, createThread } = useThreads();
+  const { messages: historicalMessages, isLoading: isLoadingHistory } = useThreadHistory(currentThreadIdRef.current);
 
   const { messages, sendMessage: originalSendMessage } = useChat({
     transport: new DefaultChatTransport({
@@ -36,67 +35,10 @@ export default function App() {
   });
   const [input, setInput] = useState("");
 
-  // Fetch all threads
-  const fetchThreads = async () => {
-    if (!user) return;
-
-    try {
-      const response = await fetch("/api/threads", {
-        headers: getAuthHeaders(),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setThreads(data.threads);
-      }
-    } catch (error) {
-      console.error("Error fetching threads:", error);
-    }
-  };
-
-  // Load thread history
-  const loadThreadHistory = async (threadId: string) => {
-    setIsLoadingHistory(true);
-    try {
-      const response = await fetch(`/api/threads/${threadId}`, {
-        headers: getAuthHeaders(),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setHistoricalMessages(data.messages);
-      }
-    } catch (error) {
-      console.error("Error loading thread history:", error);
-    } finally {
-      setIsLoadingHistory(false);
-    }
-  };
-
   // Switch to a different thread
   const switchToThread = async (threadId: string) => {
     currentThreadIdRef.current = threadId;
     window.history.pushState(null, "", `/threads/${threadId}`);
-    await loadThreadHistory(threadId);
-  };
-
-  // Create a new thread
-  const createThread = async (): Promise<string> => {
-    const response = await fetch("/api/threads", {
-      method: "POST",
-      headers: {
-        ...getAuthHeaders(),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({}), // No title for now
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to create thread");
-    }
-
-    const data = await response.json();
-    return data.thread.id;
   };
 
   // Custom sendMessage that handles thread creation
@@ -110,12 +52,6 @@ export default function App() {
 
         // Update URL to include threadId
         window.history.pushState(null, "", `/threads/${threadId}`);
-
-        // Refresh thread list to include the new thread
-        await fetchThreads();
-
-        // Clear historical messages since this is a new thread
-        setHistoricalMessages([]);
       }
 
       // Send the message using the original function
@@ -128,15 +64,11 @@ export default function App() {
 
   const handleSignIn = async (userData: User) => {
     signIn(userData);
-    // Fetch threads after sign in
-    await fetchThreads();
   };
 
   const handleSignOut = () => {
     signOut();
     currentThreadIdRef.current = null; // Reset thread on sign out
-    setThreads([]); // Clear threads
-    setHistoricalMessages([]); // Clear historical messages
     // Reset URL to home
     window.history.pushState(null, "", "/");
   };
@@ -147,11 +79,10 @@ export default function App() {
 
   const handleNewThread = () => {
     currentThreadIdRef.current = null;
-    setHistoricalMessages([]);
     window.history.pushState(null, "", "/");
   };
 
-  // Load thread from URL and handle auth state changes
+  // Load thread from URL on mount
   useEffect(() => {
     // Check for threadId in URL
     const path = window.location.pathname;
@@ -162,19 +93,6 @@ export default function App() {
       console.log("Loaded thread from URL:", threadId);
     }
   }, []);
-
-  // Handle user authentication state changes
-  useEffect(() => {
-    if (user && !authLoading) {
-      // Fetch threads when user is authenticated
-      fetchThreads().then(() => {
-        // If there's a threadId in URL, load its history
-        if (currentThreadIdRef.current) {
-          loadThreadHistory(currentThreadIdRef.current);
-        }
-      });
-    }
-  }, [user, authLoading]);
 
   return (
     <div

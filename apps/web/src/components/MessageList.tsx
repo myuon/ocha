@@ -28,7 +28,7 @@ export function MessageList({
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [historicalMessages, currentMessages]);
+  }, []);
   // Helper function to render messages (both current and historical)
   const renderMessage = (message: Message) => {
     let parts = message.parts;
@@ -69,26 +69,34 @@ export function MessageList({
           </strong>
           <div style={{ margin: "8px 0 0 0" }}>
             {parts && Array.isArray(parts) ? (
-              parts.map((part: UIMessagePart<{}, {}>, index: number) => {
-                if (part.type === "text") {
-                  return (
-                    <Markdown
-                      key={`${message.id}-text-${index}`}
-                      id={message.id}
-                      content={part.text}
-                    />
-                  );
+              parts.map(
+                (
+                  part: UIMessagePart<
+                    Record<string, never>,
+                    Record<string, never>
+                  >,
+                  index: number
+                ) => {
+                  if (part.type === "text") {
+                    return (
+                      <Markdown
+                        key={`${message.id}-text-${index}`}
+                        id={message.id}
+                        content={part.text}
+                      />
+                    );
+                  }
+                  if (part.type?.startsWith("tool-")) {
+                    return (
+                      <ToolDisplay
+                        key={`${message.id}-tool-${index}`}
+                        part={part as ToolPart}
+                      />
+                    );
+                  }
+                  return null;
                 }
-                if (part.type?.startsWith("tool-")) {
-                  return (
-                    <ToolDisplay
-                      key={`${message.id}-tool-${index}`}
-                      part={part as ToolPart}
-                    />
-                  );
-                }
-                return null;
-              })
+              )
             ) : (
               // Fallback when parts is not available
               <div>No content available</div>

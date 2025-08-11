@@ -8,7 +8,16 @@ export async function createDbConnection() {
     console.warn("Using production database");
 
   return drizzle(async (sql, params, method) => {
-    const url = `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID!}/d1/database/${process.env.CLOUDFLARE_D1_DATABASE_ID!}/query`;
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    const databaseId = process.env.CLOUDFLARE_D1_DATABASE_ID;
+
+    if (!accountId || !databaseId) {
+      throw new Error(
+        "Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_D1_DATABASE_ID"
+      );
+    }
+
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/query`;
 
     const res = await fetch(url, {
       method: "POST",
@@ -19,7 +28,16 @@ export async function createDbConnection() {
       body: JSON.stringify({ sql, params, method }),
     });
 
-    const data = (await res.json()) as any;
+    interface D1Response {
+      success: boolean;
+      errors: string[];
+      result: Array<{
+        success: boolean;
+        results: Record<string, unknown>[];
+      }>;
+    }
+
+    const data = (await res.json()) as D1Response;
 
     if (res.status !== 200)
       throw new Error(
@@ -38,7 +56,7 @@ export async function createDbConnection() {
       );
 
     // https://orm.drizzle.team/docs/get-started-sqlite#http-proxy
-    return { rows: qResult.results.map((r: any) => Object.values(r)) };
+    return { rows: qResult.results.map((r) => Object.values(r)) };
   });
 }
 

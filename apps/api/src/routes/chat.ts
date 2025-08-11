@@ -12,8 +12,14 @@ type Variables = {
   auth: AuthContext;
 };
 
+interface MessagePart {
+  type: string;
+  text?: string;
+  input?: { text?: string };
+}
+
 // Utility function to extract content from parts
-function extractContentFromParts(parts: any[]): string {
+function extractContentFromParts(parts: MessagePart[]): string {
   if (!Array.isArray(parts)) return "";
 
   return parts
@@ -41,8 +47,15 @@ const chatRoutes = app.post(
 
       const { threadId, messages } = requestBody;
 
+      interface ChatMessage {
+        role: "user" | "assistant" | "system";
+        parts: MessagePart[];
+      }
+
       // Extract the latest user message from the messages array
-      const userMessages = messages.filter((msg: any) => msg.role === "user");
+      const userMessages = (messages as ChatMessage[]).filter(
+        (msg) => msg.role === "user"
+      );
       const latestUserMessage = userMessages[userMessages.length - 1];
 
       if (!latestUserMessage) {
@@ -59,17 +72,25 @@ const chatRoutes = app.post(
         `Loaded ${recentMessages.length} recent messages for thread ${threadId}`
       );
 
+      interface StoredMessage {
+        id: string;
+        role: string;
+        parts: string | MessagePart[];
+      }
+
       // Convert historical messages to the format expected by AI SDK
-      const historyInAiFormat = recentMessages.map((msg: any) => {
-        const parts =
-          typeof msg.parts === "string" ? JSON.parse(msg.parts) : msg.parts;
-        return {
-          id: msg.id,
-          role: msg.role as "user" | "assistant" | "system",
-          content: extractContentFromParts(parts),
-          parts: parts,
-        };
-      });
+      const historyInAiFormat = (recentMessages as StoredMessage[]).map(
+        (msg) => {
+          const parts =
+            typeof msg.parts === "string" ? JSON.parse(msg.parts) : msg.parts;
+          return {
+            id: msg.id,
+            role: msg.role as "user" | "assistant" | "system",
+            content: extractContentFromParts(parts),
+            parts: parts,
+          };
+        }
+      );
 
       // Extract content from the latest user message parts
       const userContent = extractContentFromParts(latestUserMessage.parts);
@@ -98,7 +119,7 @@ const chatRoutes = app.post(
       console.log(`Saved user message to thread ${threadId}`);
 
       // Convert UI messages to model messages
-      const modelMessages = convertToModelMessages(allMessages as any);
+      const modelMessages = convertToModelMessages(allMessages);
 
       const openai = createOpenAI({ apiKey });
 

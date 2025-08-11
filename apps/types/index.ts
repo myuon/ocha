@@ -10,6 +10,7 @@ export interface User {
 // Thread types
 export interface Thread {
   id: string;
+  user_id: string;
   title?: string;
   created_at: string;
   updated_at: string;
@@ -36,5 +37,5 @@ export interface ToolPart {
 
 // Auth types
 export interface AuthContext {
-  user: User | null;
+  user: User;
 }

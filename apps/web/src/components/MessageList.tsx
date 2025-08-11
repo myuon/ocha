@@ -10,6 +10,7 @@ interface MessageListProps {
   isLoadingHistory: boolean;
   currentThreadId: string | null;
   input: string;
+  isOwner: boolean;
   onInputChange: (value: string) => void;
   onSendMessage: (message: { text: string }) => void;
 }
@@ -22,6 +23,7 @@ export function MessageList({
   input,
   onInputChange,
   onSendMessage,
+  isOwner,
 }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -65,7 +67,7 @@ export function MessageList({
               color: message.role === "user" ? "#1976d2" : "#7b1fa2",
             }}
           >
-            {message.role === "user" ? "You:" : "AI:"}
+            {message.role === "user" ? (isOwner ? "You:" : "Owner:") : "AI:"}
           </strong>
           <div style={{ margin: "8px 0 0 0" }}>
             {parts && Array.isArray(parts) ? (
@@ -177,7 +179,10 @@ export function MessageList({
             type="text"
             value={input}
             onChange={(e) => onInputChange(e.target.value)}
-            placeholder="Type your message..."
+            placeholder={
+              isOwner ? "Type your message..." : "You are not the thread owner"
+            }
+            disabled={!isOwner}
             style={{
               flex: 1,
               padding: 12,

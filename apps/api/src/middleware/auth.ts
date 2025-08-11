@@ -32,18 +32,11 @@ export const authMiddleware = async (c: Context, next: Next) => {
 
           // Add user to context
           c.set("auth", { user } as AuthContext);
-        } else {
-          c.set("auth", { user: null } as AuthContext);
         }
       }
     } catch (error) {
       console.error("Auth middleware error:", error);
-      // Continue without authentication for now
-      c.set("auth", { user: null } as AuthContext);
     }
-  } else {
-    // No authentication provided
-    c.set("auth", { user: null } as AuthContext);
   }
 
   await next();

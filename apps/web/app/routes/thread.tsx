@@ -13,20 +13,18 @@ import { MessageList } from "../../src/components/MessageList";
 import { useAuth } from "../../src/hooks/useAuth";
 import { client, getAuthHeaders } from "../../src/lib/api";
 
-export async function loader({
-  params,
-}: LoaderFunctionArgs) {
+export async function loader({ params }: LoaderFunctionArgs) {
   const { threadId } = params;
 
   // Server-side rendering時はlocalStorageが使用できないため、クライアント専用
   if (typeof window === "undefined") {
-    return { messages: [] };
+    return undefined;
   }
 
   const token = localStorage.getItem("auth_token");
 
   if (!token || !threadId) {
-    return { messages: [] };
+    return undefined;
   }
 
   try {
@@ -40,15 +38,14 @@ export async function loader({
     );
 
     if (response.ok) {
-      const data = await response.json();
-      return { messages: data.messages };
+      return await response.json();
     } else {
       console.error("Failed to fetch thread messages");
-      return { messages: [] };
+      return undefined;
     }
   } catch (error) {
     console.error("Error loading thread messages:", error);
-    return { messages: [] };
+    return undefined;
   }
 }
 
@@ -100,7 +97,8 @@ function ThreadChat({ threadId, threadData, initialMessage }: ThreadChatProps) {
 
   return (
     <MessageList
-      historicalMessages={threadData.messages}
+      isOwner={threadData?.isOwner ?? false}
+      historicalMessages={threadData?.messages ?? []}
       currentMessages={messages as Message[]}
       isLoadingHistory={false}
       currentThreadId={threadId}

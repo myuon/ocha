@@ -45,7 +45,16 @@ const chatRoutes = app.post(
       const requestBody = c.req.valid("json");
       console.log("Received body:", JSON.stringify(requestBody, null, 2));
 
+      const { user } = c.get("auth");
+
+      const { getDatabase } = await import("../db/index.js");
+      const db = await getDatabase();
+
       const { threadId, messages } = requestBody;
+      const thread = await db.getThread(threadId);
+      if (thread?.user_id !== user.id) {
+        return c.json({ error: "Cannot post messages in this thread" }, 401);
+      }
 
       interface ChatMessage {
         role: "user" | "assistant" | "system";
@@ -61,9 +70,6 @@ const chatRoutes = app.post(
       if (!latestUserMessage) {
         return c.json({ error: "No user message found" }, 400);
       }
-
-      const { getDatabase } = await import("../db/index.js");
-      const db = await getDatabase();
 
       // Get recent messages from the thread (last 20)
       const allThreadMessages = await db.getThreadMessages(threadId);

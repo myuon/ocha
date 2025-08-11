@@ -4,6 +4,11 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getDatabase } from "../db/index.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import type { AuthContext } from "../types/auth.js";
+
+type Variables = {
+  auth: AuthContext;
+};
 
 // Validation schemas
 const createThreadSchema = z.object({
@@ -20,7 +25,7 @@ function generateId(): string {
   return nanoid();
 }
 
-const app = new Hono();
+const app = new Hono<{ Variables: Variables }>();
 
 app.use("*", requireAuth);
 
@@ -28,8 +33,9 @@ const threads = app
   // GET /threads - Get all threads
   .get("/", async (c) => {
     try {
+      const auth = c.get("auth");
       const db = await getDatabase();
-      const threadList = await db.getAllThreads();
+      const threadList = await db.getAllThreads(auth.user.id);
       return c.json({ threads: threadList });
     } catch (error) {
       console.error("Error fetching threads:", error);
@@ -41,10 +47,11 @@ const threads = app
   .post("/", zValidator("json", createThreadSchema), async (c) => {
     try {
       const { title } = c.req.valid("json");
+      const auth = c.get("auth");
 
       const db = await getDatabase();
       const threadId = generateId();
-      const thread = await db.createThread(threadId, title);
+      const thread = await db.createThread(threadId, auth.user.id, title);
 
       return c.json({ thread }, 201);
     } catch (error) {
@@ -57,6 +64,7 @@ const threads = app
   .get("/:threadId", async (c) => {
     try {
       const threadId = c.req.param("threadId");
+      const auth = c.get("auth");
       const db = await getDatabase();
 
       const thread = await db.getThread(threadId);
@@ -66,7 +74,11 @@ const threads = app
 
       const messages = await db.getThreadMessages(threadId);
 
-      return c.json({ thread, messages });
+      return c.json({
+        thread,
+        messages,
+        isOwner: thread.user_id === auth.user.id,
+      });
     } catch (error) {
       console.error("Error fetching thread:", error);
       return c.json({ error: "Failed to fetch thread" }, 500);
@@ -84,9 +96,10 @@ const threads = app
 
         const db = await getDatabase();
 
-        // Check if thread exists
+        // Check if thread exists and belongs to user
+        const auth = c.get("auth");
         const thread = await db.getThread(threadId);
-        if (!thread) {
+        if (!thread || thread.user_id !== auth.user.id) {
           return c.json({ error: "Thread not found" }, 404);
         }
 
@@ -106,10 +119,11 @@ const threads = app
   .delete("/:threadId", async (c) => {
     try {
       const threadId = c.req.param("threadId");
+      const auth = c.get("auth");
       const db = await getDatabase();
 
       const thread = await db.getThread(threadId);
-      if (!thread) {
+      if (!thread || thread.user_id !== auth.user.id) {
         return c.json({ error: "Thread not found" }, 404);
       }
 

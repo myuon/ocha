@@ -71,10 +71,10 @@ class DrizzleDatabase {
     console.log("Database initialized with Drizzle ORM and Cloudflare D1");
   }
 
-  async createThread(id: string, title?: string): Promise<Thread> {
+  async createThread(id: string, userId: string, title?: string): Promise<Thread> {
     const [thread] = await this.db
       .insert(threads)
-      .values({ id, title })
+      .values({ id, userId, title })
       .returning();
 
     if (!thread) throw new Error("Failed to create thread");
@@ -82,6 +82,7 @@ class DrizzleDatabase {
     // Convert Drizzle result to match existing interface
     return {
       id: thread.id,
+      user_id: thread.userId,
       title: thread.title || undefined,
       created_at: thread.createdAt,
       updated_at: thread.updatedAt,
@@ -99,20 +100,23 @@ class DrizzleDatabase {
 
     return {
       id: thread.id,
+      user_id: thread.userId,
       title: thread.title || undefined,
       created_at: thread.createdAt,
       updated_at: thread.updatedAt,
     };
   }
 
-  async getAllThreads(): Promise<Thread[]> {
+  async getAllThreads(userId: string): Promise<Thread[]> {
     const result = await this.db
       .select()
       .from(threads)
+      .where(eq(threads.userId, userId))
       .orderBy(desc(threads.updatedAt), desc(threads.createdAt));
 
     return result.map((thread) => ({
       id: thread.id,
+      user_id: thread.userId,
       title: thread.title || undefined,
       created_at: thread.createdAt,
       updated_at: thread.updatedAt,

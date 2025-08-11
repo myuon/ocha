@@ -1,122 +1,70 @@
-import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import sqlite3 from "sqlite3";
-import { fileURLToPath } from "node:url";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import Database from "better-sqlite3";
+import { threads, messages } from "./schema.js";
+import { eq, desc } from "drizzle-orm";
+import type { Thread, Message } from "@ocha/types";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+class DrizzleDatabase {
+  private db: ReturnType<typeof drizzle>;
+  private sqlite: Database.Database;
 
-import type { Message, Thread } from "@ocha/types";
-
-class Database {
-  private db: sqlite3.Database | null = null;
-  private dbPath: string;
-
-  constructor(dbPath: string = "conversations.db") {
-    this.dbPath = dbPath;
+  constructor(dbPath: string = "../../conversations.db") {
+    this.sqlite = new Database(dbPath);
+    this.db = drizzle(this.sqlite);
   }
 
   async initialize(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.db = new sqlite3.Database(this.dbPath, async (err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        try {
-          // Read and execute schema
-          const schemaPath = join(__dirname, "schema.sql");
-          const schema = await readFile(schemaPath, "utf-8");
-
-          // Execute schema statements
-          const statements = schema.split(";").filter((s) => s.trim());
-          for (const statement of statements) {
-            await this.run(statement);
-          }
-
-          // Migration: Add parts column if it doesn't exist
-          try {
-            await this.run("ALTER TABLE messages ADD COLUMN parts TEXT");
-            console.log("Added parts column to messages table");
-          } catch (migrationError: unknown) {
-            // Column already exists or other error - that's okay
-            if (
-              migrationError instanceof Error &&
-              !migrationError.message?.includes("duplicate column name")
-            ) {
-              console.warn("Migration warning:", migrationError.message);
-            }
-          }
-
-          resolve();
-        } catch (error) {
-          reject(error);
-        }
-      });
-    });
-  }
-
-  private async run(sql: string, params: unknown[] = []): Promise<void> {
-    if (!this.db) throw new Error("Database not initialized");
-    const db = this.db;
-
-    return new Promise((resolve, reject) => {
-      db.run(sql, params, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-  }
-
-  private async get<T>(
-    sql: string,
-    params: unknown[] = []
-  ): Promise<T | undefined> {
-    if (!this.db) throw new Error("Database not initialized");
-    const db = this.db;
-
-    return new Promise((resolve, reject) => {
-      db.get(sql, params, (err, row) => {
-        if (err) reject(err);
-        else resolve(row as T);
-      });
-    });
-  }
-
-  private async all<T>(sql: string, params: unknown[] = []): Promise<T[]> {
-    if (!this.db) throw new Error("Database not initialized");
-    const db = this.db;
-
-    return new Promise((resolve, reject) => {
-      db.all(sql, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows as T[]);
-      });
-    });
+    // Enable foreign keys
+    this.sqlite.pragma("foreign_keys = ON");
+    console.log("Database initialized with Drizzle ORM");
   }
 
   async createThread(id: string, title?: string): Promise<Thread> {
-    const sql = `
-      INSERT INTO threads (id, title) 
-      VALUES (?, ?) 
-      RETURNING *
-    `;
-
-    const thread = await this.get<Thread>(sql, [id, title]);
+    const [thread] = await this.db
+      .insert(threads)
+      .values({ id, title })
+      .returning();
+    
     if (!thread) throw new Error("Failed to create thread");
-
-    return thread;
+    
+    // Convert Drizzle result to match existing interface
+    return {
+      id: thread.id,
+      title: thread.title || undefined,
+      created_at: thread.createdAt,
+      updated_at: thread.updatedAt
+    };
   }
 
   async getThread(id: string): Promise<Thread | undefined> {
-    const sql = "SELECT * FROM threads WHERE id = ?";
-    return await this.get<Thread>(sql, [id]);
+    const [thread] = await this.db
+      .select()
+      .from(threads)
+      .where(eq(threads.id, id))
+      .limit(1);
+    
+    if (!thread) return undefined;
+    
+    return {
+      id: thread.id,
+      title: thread.title || undefined,
+      created_at: thread.createdAt,
+      updated_at: thread.updatedAt
+    };
   }
 
   async getAllThreads(): Promise<Thread[]> {
-    const sql = "SELECT * FROM threads ORDER BY updated_at DESC";
-    return await this.all<Thread>(sql);
+    const result = await this.db
+      .select()
+      .from(threads)
+      .orderBy(desc(threads.updatedAt));
+    
+    return result.map(thread => ({
+      id: thread.id,
+      title: thread.title || undefined,
+      created_at: thread.createdAt,
+      updated_at: thread.updatedAt
+    }));
   }
 
   async addMessage(
@@ -126,61 +74,61 @@ class Database {
     parts: unknown[]
   ): Promise<Message> {
     // Update thread's updated_at timestamp
-    await this.run(
-      "UPDATE threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      [threadId]
-    );
-
-    const sql = `
-      INSERT INTO messages (id, thread_id, role, parts) 
-      VALUES (?, ?, ?, ?) 
-      RETURNING *
-    `;
+    await this.db
+      .update(threads)
+      .set({ updatedAt: new Date().toISOString() })
+      .where(eq(threads.id, threadId));
 
     const partsJson = JSON.stringify(parts);
-    const message = await this.get<Message>(sql, [
-      id,
-      threadId,
-      role,
-      partsJson,
-    ]);
-    if (!message) throw new Error("Failed to add message");
+    const [message] = await this.db
+      .insert(messages)
+      .values({ id, threadId, role, parts: partsJson })
+      .returning();
 
-    return message;
+    if (!message) throw new Error("Failed to add message");
+    
+    return {
+      id: message.id,
+      thread_id: message.threadId,
+      role: message.role,
+      parts: message.parts,
+      created_at: message.createdAt
+    };
   }
 
   async getThreadMessages(threadId: string): Promise<Message[]> {
-    const sql =
-      "SELECT * FROM messages WHERE thread_id = ? ORDER BY created_at ASC";
-    return await this.all<Message>(sql, [threadId]);
+    const result = await this.db
+      .select()
+      .from(messages)
+      .where(eq(messages.threadId, threadId))
+      .orderBy(messages.createdAt);
+    
+    return result.map(message => ({
+      id: message.id,
+      thread_id: message.threadId,
+      role: message.role,
+      parts: message.parts,
+      created_at: message.createdAt
+    }));
   }
 
   async deleteThread(id: string): Promise<void> {
-    await this.run("DELETE FROM threads WHERE id = ?", [id]);
+    await this.db
+      .delete(threads)
+      .where(eq(threads.id, id));
   }
 
   async close(): Promise<void> {
-    if (!this.db) return;
-    const db = this.db;
-
-    return new Promise((resolve, reject) => {
-      db.close((err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+    this.sqlite.close();
   }
 }
 
-// Singleton instance
-let dbInstance: Database | null = null;
+let dbInstance: DrizzleDatabase | null = null;
 
-export async function getDatabase(): Promise<Database> {
+export async function getDatabase(): Promise<DrizzleDatabase> {
   if (!dbInstance) {
-    dbInstance = new Database();
+    dbInstance = new DrizzleDatabase();
     await dbInstance.initialize();
   }
   return dbInstance;
 }
-
-export { Database };

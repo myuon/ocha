@@ -86,7 +86,7 @@ const chatRoutes = app.post(
       console.log(`Saved user message to thread ${threadId}`);
 
       // Convert UI messages to model messages
-      const modelMessages = convertToModelMessages(allMessages);
+      const modelMessages = convertToModelMessages(allMessages as any);
 
       const openai = createOpenAI({ apiKey });
 

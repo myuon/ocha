@@ -18,6 +18,11 @@
     "check": "biome check --write apps/"
   },
   "devDependencies": {
-    "concurrently": "^9.0.1"
+    "concurrently": "^9.0.1",
+    "drizzle-kit": "^0.31.4"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.4",
+    "zod": "^4.0.17"
   }
 }

@@ -2,8 +2,29 @@ import { Hono } from "hono";
 
 const healthRoutes = new Hono();
 
-healthRoutes.get("/", (c) => {
-  return c.json({ ok: true });
+healthRoutes.get("/", async (c) => {
+  try {
+    // Test database initialization
+    const { getDatabase } = await import("../db/index.js");
+    const db = await getDatabase();
+    
+    // Simple test query to verify Drizzle is working
+    const threads = await db.getAllThreads();
+    
+    return c.json({ 
+      ok: true, 
+      database: "connected", 
+      threadsCount: threads.length,
+      drizzle: "initialized"
+    });
+  } catch (error) {
+    console.error("Database test failed:", error);
+    return c.json({ 
+      ok: true, 
+      database: "error",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
 });
 
 export default healthRoutes;

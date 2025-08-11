@@ -1,4 +1,5 @@
 import type { Message, ToolPart } from "@ocha/types";
+import { useEffect, useRef } from "react";
 import { Markdown } from "./Markdown";
 import { ToolDisplay } from "./ToolDisplay";
 import { UIMessagePart } from "ai";
@@ -22,6 +23,12 @@ export function MessageList({
   onInputChange,
   onSendMessage,
 }: MessageListProps) {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [historicalMessages, currentMessages]);
   // Helper function to render messages (both current and historical)
   const renderMessage = (message: Message) => {
     let parts = message.parts;
@@ -129,6 +136,9 @@ export function MessageList({
               </p>
             </div>
           )}
+        
+        {/* Invisible element to scroll to */}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Form */}

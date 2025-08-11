@@ -1,32 +1,10 @@
 import { useChat } from "@ai-sdk/react";
+import type { Message, Thread, User } from "@ocha/types";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useRef, useState } from "react";
 import { GoogleSignIn } from "./components/GoogleSignIn";
-import { ThreadList } from "./components/ThreadList";
 import { ThreadDetail } from "./components/ThreadDetail";
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  picture?: string;
-  verified_email: boolean;
-}
-
-interface Thread {
-  id: string;
-  title?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Message {
-  id: string;
-  thread_id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
-  created_at: string;
-}
+import { ThreadList } from "./components/ThreadList";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);

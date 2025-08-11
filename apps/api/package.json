@@ -19,6 +19,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^2.0.7",
     "@hono/node-server": "^1.11.7",
+    "@ocha/types": "file:../types",
     "@types/sqlite3": "^3.1.11",
     "ai": "^5.0.8",
     "dotenv": "^17.2.1",

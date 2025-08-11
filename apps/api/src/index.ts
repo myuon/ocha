@@ -7,8 +7,8 @@ import { requireAuth } from "./middleware/requireAuth.js";
 import { googleAuthHandler } from "./routes/auth.js";
 import { chatHandler } from "./routes/chat.js";
 import { healthHandler } from "./routes/health.js";
-import { verifyAuthHandler } from "./routes/verifyAuth.js";
 import threadsRoutes from "./routes/threads.js";
+import { verifyAuthHandler } from "./routes/verifyAuth.js";
 import { setupGracefulShutdown } from "./utils/server.js";
 
 const app = new Hono();

@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
+import { useState } from "react";
 import { MessageList } from "../../src/components/MessageList";
 
 export default function Home() {

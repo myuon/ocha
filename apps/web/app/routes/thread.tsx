@@ -1,18 +1,10 @@
-import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
+import type { Message } from "@ocha/types";
 import { DefaultChatTransport } from "ai";
-import { useParams, useLoaderData } from "react-router-dom";
+import { useState } from "react";
 import type { LoaderFunctionArgs } from "react-router-dom";
+import { useLoaderData, useParams } from "react-router-dom";
 import { MessageList } from "../../src/components/MessageList";
-
-interface Message {
-  id: string;
-  thread_id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  parts?: any;
-  created_at: string;
-}
 
 interface ThreadData {
   messages: Message[];

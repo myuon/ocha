@@ -1,22 +1,8 @@
+import type { Thread, User } from "@ocha/types";
 import { useState } from "react";
-import { Outlet, useLocation, useLoaderData } from "react-router-dom";
+import { Outlet, useLoaderData, useLocation } from "react-router-dom";
 import { GoogleSignIn } from "../../src/components/GoogleSignIn";
 import { ThreadList } from "../../src/components/ThreadList";
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  picture?: string;
-  verified_email: boolean;
-}
-
-interface Thread {
-  id: string;
-  title?: string;
-  created_at: string;
-  updated_at: string;
-}
 
 interface LayoutData {
   user: User | null;

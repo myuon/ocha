@@ -1,9 +1,4 @@
-interface Thread {
-  id: string;
-  title?: string;
-  created_at: string;
-  updated_at: string;
-}
+import type { Thread } from "@ocha/types";
 
 interface ThreadListProps {
   threads: Thread[];

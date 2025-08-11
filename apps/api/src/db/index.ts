@@ -1,32 +1,18 @@
-import sqlite3 from 'sqlite3';
-import { readFile } from 'fs/promises';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { readFile } from "fs/promises";
+import { dirname, join } from "path";
+import sqlite3 from "sqlite3";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export interface Thread {
-  id: string;
-  title?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Message {
-  id: string;
-  thread_id: string;
-  role: 'user' | 'assistant' | 'system';
-  content?: string; // Optional for backwards compatibility
-  parts?: string; // JSON string of message parts
-  created_at: string;
-}
+import type { Message, Thread } from "@ocha/types";
 
 class Database {
   private db: sqlite3.Database | null = null;
   private dbPath: string;
 
-  constructor(dbPath: string = 'conversations.db') {
+  constructor(dbPath: string = "conversations.db") {
     this.dbPath = dbPath;
   }
 
@@ -40,26 +26,26 @@ class Database {
 
         try {
           // Read and execute schema
-          const schemaPath = join(__dirname, 'schema.sql');
-          const schema = await readFile(schemaPath, 'utf-8');
-          
+          const schemaPath = join(__dirname, "schema.sql");
+          const schema = await readFile(schemaPath, "utf-8");
+
           // Execute schema statements
-          const statements = schema.split(';').filter(s => s.trim());
+          const statements = schema.split(";").filter((s) => s.trim());
           for (const statement of statements) {
             await this.run(statement);
           }
-          
+
           // Migration: Add parts column if it doesn't exist
           try {
-            await this.run('ALTER TABLE messages ADD COLUMN parts TEXT');
-            console.log('Added parts column to messages table');
+            await this.run("ALTER TABLE messages ADD COLUMN parts TEXT");
+            console.log("Added parts column to messages table");
           } catch (migrationError: any) {
             // Column already exists or other error - that's okay
-            if (!migrationError.message?.includes('duplicate column name')) {
-              console.warn('Migration warning:', migrationError.message);
+            if (!migrationError.message?.includes("duplicate column name")) {
+              console.warn("Migration warning:", migrationError.message);
             }
           }
-          
+
           resolve();
         } catch (error) {
           reject(error);
@@ -69,19 +55,22 @@ class Database {
   }
 
   private async run(sql: string, params: any[] = []): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
-    
+    if (!this.db) throw new Error("Database not initialized");
+
     return new Promise((resolve, reject) => {
-      this.db!.run(sql, params, function(err) {
+      this.db!.run(sql, params, (err) => {
         if (err) reject(err);
         else resolve();
       });
     });
   }
 
-  private async get<T>(sql: string, params: any[] = []): Promise<T | undefined> {
-    if (!this.db) throw new Error('Database not initialized');
-    
+  private async get<T>(
+    sql: string,
+    params: any[] = []
+  ): Promise<T | undefined> {
+    if (!this.db) throw new Error("Database not initialized");
+
     return new Promise((resolve, reject) => {
       this.db!.get(sql, params, (err, row) => {
         if (err) reject(err);
@@ -91,8 +80,8 @@ class Database {
   }
 
   private async all<T>(sql: string, params: any[] = []): Promise<T[]> {
-    if (!this.db) throw new Error('Database not initialized');
-    
+    if (!this.db) throw new Error("Database not initialized");
+
     return new Promise((resolve, reject) => {
       this.db!.all(sql, params, (err, rows) => {
         if (err) reject(err);
@@ -107,58 +96,68 @@ class Database {
       VALUES (?, ?) 
       RETURNING *
     `;
-    
+
     const thread = await this.get<Thread>(sql, [id, title]);
-    if (!thread) throw new Error('Failed to create thread');
-    
+    if (!thread) throw new Error("Failed to create thread");
+
     return thread;
   }
 
   async getThread(id: string): Promise<Thread | undefined> {
-    const sql = 'SELECT * FROM threads WHERE id = ?';
+    const sql = "SELECT * FROM threads WHERE id = ?";
     return await this.get<Thread>(sql, [id]);
   }
 
   async getAllThreads(): Promise<Thread[]> {
-    const sql = 'SELECT * FROM threads ORDER BY updated_at DESC';
+    const sql = "SELECT * FROM threads ORDER BY updated_at DESC";
     return await this.all<Thread>(sql);
   }
 
   async addMessage(
     id: string,
     threadId: string,
-    role: 'user' | 'assistant' | 'system',
+    role: "user" | "assistant" | "system",
     content?: string,
     parts?: any[]
   ): Promise<Message> {
     // Update thread's updated_at timestamp
-    await this.run('UPDATE threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', [threadId]);
-    
+    await this.run(
+      "UPDATE threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      [threadId]
+    );
+
     const sql = `
       INSERT INTO messages (id, thread_id, role, content, parts) 
       VALUES (?, ?, ?, ?, ?) 
       RETURNING *
     `;
-    
+
     const partsJson = parts ? JSON.stringify(parts) : null;
-    const message = await this.get<Message>(sql, [id, threadId, role, content, partsJson]);
-    if (!message) throw new Error('Failed to add message');
-    
+    const message = await this.get<Message>(sql, [
+      id,
+      threadId,
+      role,
+      content,
+      partsJson,
+    ]);
+    if (!message) throw new Error("Failed to add message");
+
     return message;
   }
 
   async getThreadMessages(threadId: string): Promise<Message[]> {
-    const sql = 'SELECT * FROM messages WHERE thread_id = ? ORDER BY created_at ASC';
+    const sql =
+      "SELECT * FROM messages WHERE thread_id = ? ORDER BY created_at ASC";
     return await this.all<Message>(sql, [threadId]);
   }
 
   async deleteThread(id: string): Promise<void> {
-    await this.run('DELETE FROM threads WHERE id = ?', [id]);
+    await this.run("DELETE FROM threads WHERE id = ?", [id]);
   }
 
   async close(): Promise<void> {
     if (!this.db) return;
-    
+
     return new Promise((resolve, reject) => {
       this.db!.close((err) => {
         if (err) reject(err);

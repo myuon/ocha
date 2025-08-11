@@ -1,13 +1,6 @@
+import type { User } from "@ocha/types";
 import { useEffect, useRef } from "react";
 import { CLIENT_ID } from "../config";
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  picture?: string;
-  verified_email: boolean;
-}
 
 interface GoogleSignInProps {
   onSignIn: (user: User) => void;

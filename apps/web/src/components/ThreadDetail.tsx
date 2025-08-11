@@ -1,21 +1,5 @@
+import type { Message, User } from "@ocha/types";
 import { MessageList } from "./MessageList";
-
-interface Message {
-  id: string;
-  thread_id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  parts?: any;
-  created_at: string;
-}
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  picture?: string;
-  verified_email: boolean;
-}
 
 interface ThreadDetailProps {
   user: User;

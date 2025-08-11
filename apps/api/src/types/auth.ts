@@ -6,14 +6,6 @@ export const GoogleTokenSchema = z.object({
 
 export type GoogleTokenRequest = z.infer<typeof GoogleTokenSchema>;
 
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  picture?: string;
-  verified_email: boolean;
-}
+import type { AuthContext, User } from "@ocha/types";
 
-export interface AuthContext {
-  user: User | null;
-}
+export type { User, AuthContext };

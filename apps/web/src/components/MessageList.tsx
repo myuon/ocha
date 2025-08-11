@@ -1,23 +1,6 @@
+import type { Message, ToolPart } from "@ocha/types";
 import { Markdown } from "./Markdown";
 import { ToolDisplay } from "./ToolDisplay";
-
-interface ToolPart {
-  type: string;
-  toolCallId: string;
-  state: "call" | "output-available" | "partial" | "error";
-  input: Record<string, unknown>;
-  output?: Record<string, unknown>;
-  providerExecuted?: boolean;
-}
-
-interface Message {
-  id: string;
-  thread_id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  parts?: any;
-  created_at: string;
-}
 
 interface MessageListProps {
   historicalMessages: Message[];
@@ -41,17 +24,17 @@ export function MessageList({
   // Helper function to render messages (both current and historical)
   const renderMessage = (message: any) => {
     let parts = message.parts;
-    
+
     // If parts is a string (from database), parse it as JSON
-    if (typeof parts === 'string') {
+    if (typeof parts === "string") {
       try {
         parts = JSON.parse(parts);
       } catch (error) {
-        console.error('Failed to parse message parts:', error);
+        console.error("Failed to parse message parts:", error);
         parts = null;
       }
     }
-    
+
     return (
       <div
         key={message.id}
@@ -100,7 +83,7 @@ export function MessageList({
               })
             ) : (
               // Fallback to content for backwards compatibility or when parts is not available
-              <div>{message.content || 'No content available'}</div>
+              <div>{message.content || "No content available"}</div>
             )}
           </div>
         </div>
@@ -124,27 +107,37 @@ export function MessageList({
             Loading thread history...
           </div>
         )}
-        
+
         {/* Historical Messages */}
         {historicalMessages.map((message) => renderMessage(message))}
-        
+
         {/* Current Session Messages */}
         {currentMessages?.map((message) => renderMessage(message))}
-        
-        {(historicalMessages.length === 0 && currentMessages?.length === 0 && !isLoadingHistory) && (
-          <div style={{ textAlign: "center", padding: 32, color: "#666" }}>
-            <p style={{ fontSize: "1.1em", marginBottom: 8 }}>
-              {currentThreadId ? "Continue the conversation" : "Start a new conversation"}
-            </p>
-            <p style={{ fontSize: "0.9em" }}>
-              Type a message below to get started...
-            </p>
-          </div>
-        )}
+
+        {historicalMessages.length === 0 &&
+          currentMessages?.length === 0 &&
+          !isLoadingHistory && (
+            <div style={{ textAlign: "center", padding: 32, color: "#666" }}>
+              <p style={{ fontSize: "1.1em", marginBottom: 8 }}>
+                {currentThreadId
+                  ? "Continue the conversation"
+                  : "Start a new conversation"}
+              </p>
+              <p style={{ fontSize: "0.9em" }}>
+                Type a message below to get started...
+              </p>
+            </div>
+          )}
       </div>
 
       {/* Input Form */}
-      <div style={{ padding: 16, borderTop: "1px solid #ddd", backgroundColor: "white" }}>
+      <div
+        style={{
+          padding: 16,
+          borderTop: "1px solid #ddd",
+          backgroundColor: "white",
+        }}
+      >
         <form
           onSubmit={(e) => {
             e.preventDefault();

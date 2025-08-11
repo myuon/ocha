@@ -1,11 +1,4 @@
-interface ToolPart {
-  type: string;
-  toolCallId: string;
-  state: "call" | "output-available" | "partial" | "error";
-  input?: Record<string, unknown>;
-  output?: Record<string, unknown>;
-  providerExecuted?: boolean;
-}
+import type { ToolPart } from "@ocha/types";
 
 interface ToolDisplayProps {
   part: ToolPart;

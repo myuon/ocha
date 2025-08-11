@@ -1,8 +1,8 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
-import Layout, { loader as layoutLoader } from "../app/routes/layout";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Home from "../app/routes/home";
+import Layout, { loader as layoutLoader } from "../app/routes/layout";
 import Thread, { loader as threadLoader } from "../app/routes/thread";
 
 const router = createBrowserRouter([

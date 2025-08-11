@@ -41,7 +41,10 @@ class Database {
             console.log("Added parts column to messages table");
           } catch (migrationError: unknown) {
             // Column already exists or other error - that's okay
-            if (migrationError instanceof Error && !migrationError.message?.includes("duplicate column name")) {
+            if (
+              migrationError instanceof Error &&
+              !migrationError.message?.includes("duplicate column name")
+            ) {
               console.warn("Migration warning:", migrationError.message);
             }
           }

@@ -39,11 +39,13 @@ export function GoogleSignIn({ onSignIn, onError }: GoogleSignInProps) {
               onSignIn(data.user);
             }
           } else {
-            const errorMsg = "error" in data ? data.error : "Authentication failed";
+            const errorMsg =
+              "error" in data ? data.error : "Authentication failed";
             onError(errorMsg);
           }
         } else {
-          const errorMsg = "error" in data ? data.error : "Authentication failed";
+          const errorMsg =
+            "error" in data ? data.error : "Authentication failed";
           onError(errorMsg);
         }
       } catch (error) {

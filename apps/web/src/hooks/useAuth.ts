@@ -62,7 +62,7 @@ export function useAuth(): UseAuthReturn {
         json: {},
         header: getAuthHeaders(),
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);

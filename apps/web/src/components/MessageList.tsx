@@ -22,7 +22,7 @@ export function MessageList({
   onSendMessage,
 }: MessageListProps) {
   // Helper function to render messages (both current and historical)
-  const renderMessage = (message: Message | unknown) => {
+  const renderMessage = (message: Message | any) => {
     let parts = message.parts;
 
     // If parts is a string (from database), parse it as JSON
@@ -61,7 +61,7 @@ export function MessageList({
           </strong>
           <div style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap" }}>
             {parts && Array.isArray(parts) ? (
-              parts.map((part: unknown, index: number) => {
+              parts.map((part: any, index: number) => {
                 if (part.type === "text") {
                   return (
                     <Markdown

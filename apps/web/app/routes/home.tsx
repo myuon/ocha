@@ -1,4 +1,5 @@
 import { useChat } from "@ai-sdk/react";
+import type { Message } from "@ocha/types";
 import { DefaultChatTransport } from "ai";
 import { useState } from "react";
 import { MessageList } from "../../src/components/MessageList";
@@ -40,7 +41,7 @@ export default function Home() {
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       <MessageList
         historicalMessages={[]}
-        currentMessages={messages}
+        currentMessages={messages as Message[]}
         isLoadingHistory={false}
         currentThreadId={null}
         input={input}

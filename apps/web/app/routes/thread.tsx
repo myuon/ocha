@@ -76,7 +76,7 @@ export default function Thread() {
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       <MessageList
         historicalMessages={historicalMessages}
-        currentMessages={messages}
+        currentMessages={messages as Message[]}
         isLoadingHistory={false}
         currentThreadId={threadId || null}
         input={input}

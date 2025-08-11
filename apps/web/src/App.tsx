@@ -5,27 +5,30 @@ import { useEffect, useRef, useState } from "react";
 import { GoogleSignIn } from "./components/GoogleSignIn";
 import { ThreadDetail } from "./components/ThreadDetail";
 import { ThreadList } from "./components/ThreadList";
+import { useAuth } from "./hooks/useAuth";
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const {
+    user,
+    authError,
+    isLoading: authLoading,
+    signIn,
+    signOut,
+    setAuthError,
+    getAuthHeaders,
+  } = useAuth();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [historicalMessages, setHistoricalMessages] = useState<Message[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [_threadTitles, _setThreadTitles] = useState<Record<string, string>>({});
+  const [_threadTitles, _setThreadTitles] = useState<Record<string, string>>(
+    {}
+  );
   const currentThreadIdRef = useRef<string | null>(null);
 
   const { messages, sendMessage: originalSendMessage } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
-      headers: () => {
-        const token = localStorage.getItem("auth_token");
-        const headers: Record<string, string> = {};
-        if (token) {
-          headers.Authorization = `Bearer ${token}`;
-        }
-        return headers;
-      },
+      headers: getAuthHeaders,
       body: () => ({
         threadId: currentThreadIdRef.current,
       }),
@@ -38,11 +41,8 @@ export default function App() {
     if (!user) return;
 
     try {
-      const token = localStorage.getItem("auth_token");
       const response = await fetch("/api/threads", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: getAuthHeaders(),
       });
 
       if (response.ok) {
@@ -58,11 +58,8 @@ export default function App() {
   const loadThreadHistory = async (threadId: string) => {
     setIsLoadingHistory(true);
     try {
-      const token = localStorage.getItem("auth_token");
       const response = await fetch(`/api/threads/${threadId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: getAuthHeaders(),
       });
 
       if (response.ok) {
@@ -85,11 +82,10 @@ export default function App() {
 
   // Create a new thread
   const createThread = async (): Promise<string> => {
-    const token = localStorage.getItem("auth_token");
     const response = await fetch("/api/threads", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
+        ...getAuthHeaders(),
         "Content-Type": "application/json",
       },
       body: JSON.stringify({}), // No title for now
@@ -131,18 +127,13 @@ export default function App() {
   };
 
   const handleSignIn = async (userData: User) => {
-    setUser(userData);
-    setAuthError(null);
-    console.log("User signed in:", userData);
-
+    signIn(userData);
     // Fetch threads after sign in
     await fetchThreads();
   };
 
   const handleSignOut = () => {
-    localStorage.removeItem("auth_token");
-    setUser(null);
-    setAuthError(null);
+    signOut();
     currentThreadIdRef.current = null; // Reset thread on sign out
     setThreads([]); // Clear threads
     setHistoricalMessages([]); // Clear historical messages
@@ -152,7 +143,6 @@ export default function App() {
 
   const handleAuthError = (error: string) => {
     setAuthError(error);
-    console.error("Auth error:", error);
   };
 
   const handleNewThread = () => {
@@ -161,7 +151,7 @@ export default function App() {
     window.history.pushState(null, "", "/");
   };
 
-  // Check for existing token on mount and URL threadId
+  // Load thread from URL and handle auth state changes
   useEffect(() => {
     // Check for threadId in URL
     const path = window.location.pathname;
@@ -171,44 +161,20 @@ export default function App() {
       currentThreadIdRef.current = threadId;
       console.log("Loaded thread from URL:", threadId);
     }
-
-    const checkExistingAuth = async () => {
-      const token = localStorage.getItem("auth_token");
-      if (token) {
-        try {
-          // Verify token by calling a simple API
-          const response = await fetch("/api/auth/verify", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            setUser(data.user);
-
-            // Fetch threads after successful authentication
-            await fetchThreads();
-
-            // If there's a threadId in URL, load its history
-            if (currentThreadIdRef.current) {
-              await loadThreadHistory(currentThreadIdRef.current);
-            }
-          } else {
-            // Token is invalid, remove it
-            localStorage.removeItem("auth_token");
-          }
-        } catch (error) {
-          console.error("Token verification failed:", error);
-          localStorage.removeItem("auth_token");
-        }
-      }
-    };
-
-    checkExistingAuth();
   }, []);
+
+  // Handle user authentication state changes
+  useEffect(() => {
+    if (user && !authLoading) {
+      // Fetch threads when user is authenticated
+      fetchThreads().then(() => {
+        // If there's a threadId in URL, load its history
+        if (currentThreadIdRef.current) {
+          loadThreadHistory(currentThreadIdRef.current);
+        }
+      });
+    }
+  }, [user, authLoading]);
 
   return (
     <div
@@ -282,14 +248,13 @@ export default function App() {
         <ThreadDetail
           user={user}
           historicalMessages={historicalMessages}
-          currentMessages={messages}
+          currentMessages={messages as Message[]}
           isLoadingHistory={isLoadingHistory}
           currentThreadId={currentThreadIdRef.current}
           input={input}
           onInputChange={setInput}
           onSendMessage={sendMessage}
           onSignOut={handleSignOut}
-          authError={authError}
         />
       )}
     </div>

@@ -11,7 +11,6 @@ interface ThreadDetailProps {
   onInputChange: (value: string) => void;
   onSendMessage: (message: { text: string }) => void;
   onSignOut: () => void;
-  authError: string | null;
 }
 
 export function ThreadDetail({

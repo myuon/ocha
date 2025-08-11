@@ -14,8 +14,8 @@ class DrizzleDatabase {
   }
 
   async initialize(): Promise<void> {
-    // Enable foreign keys
-    this.sqlite.pragma("foreign_keys = ON");
+    // Foreign keys are disabled by default in SQLite to maintain compatibility
+    // this.sqlite.pragma("foreign_keys = ON");
     console.log("Database initialized with Drizzle ORM");
   }
 

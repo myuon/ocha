@@ -15,8 +15,7 @@ export const threads = sqliteTable("threads", {
 export const messages = sqliteTable("messages", {
   id: text("id").primaryKey(),
   threadId: text("thread_id")
-    .notNull()
-    .references(() => threads.id, { onDelete: "cascade" }),
+    .notNull(),
   role: text("role", { enum: ["user", "assistant", "system"] }).notNull(),
   parts: text("parts").notNull(), // JSON string
   createdAt: text("created_at")

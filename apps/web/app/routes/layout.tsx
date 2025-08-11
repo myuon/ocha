@@ -9,6 +9,7 @@ import {
 import { GoogleSignIn } from "../../src/components/GoogleSignIn";
 import { ThreadList } from "../../src/components/ThreadList";
 import { useAuth } from "../../src/hooks/useAuth";
+import { useRevalidator } from "react-router";
 
 interface LayoutData {
   user: User | null;
@@ -81,8 +82,11 @@ export default function Layout() {
     return match ? match[1] : null;
   });
 
+  const { revalidate } = useRevalidator();
+
   const handleSignIn = async (userData: User) => {
     signIn(userData);
+    revalidate();
   };
 
   const handleSignOut = () => {

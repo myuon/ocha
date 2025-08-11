@@ -58,10 +58,14 @@ export function useAuth(): UseAuthReturn {
     setTokenState(storedToken);
 
     try {
-      const response = await client.api.auth.verify.$post({
-        json: {},
-        header: getAuthHeaders(),
-      });
+      const response = await client.api.auth.verify.$post(
+        {
+          json: {},
+        },
+        {
+          headers: getAuthHeaders(),
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();

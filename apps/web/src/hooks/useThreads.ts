@@ -8,9 +8,12 @@ interface ThreadsResponse {
 }
 
 const fetcher = async () => {
-  const response = await client.api.threads.$get({
-    header: getAuthHeaders(),
-  });
+  const response = await client.api.threads.$get(
+    {},
+    {
+      headers: getAuthHeaders(),
+    }
+  );
   if (!response.ok) {
     throw new Error("Failed to fetch threads");
   }

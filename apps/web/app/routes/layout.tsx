@@ -1,6 +1,11 @@
 import type { Thread, User } from "@ocha/types";
 import { useState } from "react";
-import { Outlet, useLoaderData, useLocation, useNavigate } from "react-router-dom";
+import {
+  Outlet,
+  useLoaderData,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { GoogleSignIn } from "../../src/components/GoogleSignIn";
 import { ThreadList } from "../../src/components/ThreadList";
 import { useAuth } from "../../src/hooks/useAuth";
@@ -12,12 +17,12 @@ interface LayoutData {
 
 export async function loader(): Promise<LayoutData> {
   // Server-side rendering時はlocalStorageが使用できないため、クライアント専用
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return { user: null, threads: [] };
   }
 
   const token = localStorage.getItem("auth_token");
-  
+
   if (!token) {
     return { user: null, threads: [] };
   }
@@ -38,7 +43,7 @@ export async function loader(): Promise<LayoutData> {
     }
 
     const authData = await authResponse.json();
-    
+
     // Fetch threads
     const threadsResponse = await fetch("/api/threads", {
       headers: {
@@ -65,11 +70,11 @@ export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signIn, signOut, setAuthError } = useAuth();
-  
+
   // Use loader data as initial state, but let useAuth manage auth state
   const currentUser = user || initialData.user;
   const threads = initialData.threads; // loader data for initial threads
-  
+
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(() => {
     // Extract thread ID from URL path
     const match = location.pathname.match(/^\/threads\/(.+)$/);
@@ -78,8 +83,6 @@ export default function Layout() {
 
   const handleSignIn = async (userData: User) => {
     signIn(userData);
-    // Reload the page to get fresh data
-    window.location.reload();
   };
 
   const handleSignOut = () => {
@@ -87,7 +90,6 @@ export default function Layout() {
     setCurrentThreadId(null);
     // Navigate to home and reload to clear all data
     navigate("/");
-    window.location.reload();
   };
 
   const handleAuthError = (error: string) => {

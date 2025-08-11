@@ -100,14 +100,19 @@ export function MessageList({
   };
 
   return (
-    <>
-      {/* Messages Area */}
+    <div style={{ 
+      height: "100%", 
+      display: "flex", 
+      flexDirection: "column"
+    }}>
+      {/* Messages Area - Scrollable */}
       <div
         style={{
           flex: 1,
           overflowY: "auto",
           padding: 16,
           backgroundColor: "#fafafa",
+          minHeight: 0, // Important for flex scrolling
         }}
       >
         {isLoadingHistory && (
@@ -141,12 +146,13 @@ export function MessageList({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Form */}
+      {/* Input Form - Fixed at bottom */}
       <div
         style={{
           padding: 16,
           borderTop: "1px solid #ddd",
           backgroundColor: "white",
+          flexShrink: 0, // Prevent input from shrinking
         }}
       >
         <form
@@ -189,6 +195,6 @@ export function MessageList({
           </button>
         </form>
       </div>
-    </>
+    </div>
   );
 }

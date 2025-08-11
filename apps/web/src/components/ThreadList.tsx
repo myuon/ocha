@@ -21,6 +21,7 @@ export function ThreadList({
         borderRight: "1px solid #ddd",
         display: "flex",
         flexDirection: "column",
+        height: "100%",
       }}
     >
       {/* Sidebar Header */}

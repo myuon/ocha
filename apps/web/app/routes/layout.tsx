@@ -150,22 +150,30 @@ export default function Layout() {
           </div>
         </div>
       ) : (
-        <div style={{ flex: 1, display: "flex" }}>
+        <div style={{ flex: 1, display: "flex", height: "100%" }}>
           <ThreadList
             threads={threads}
             currentThreadId={currentThreadId}
             onThreadSelect={handleThreadSelect}
             onNewThread={handleNewThread}
           />
-          <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-            {/* Header */}
+          <div style={{ 
+            flex: 1, 
+            display: "flex", 
+            flexDirection: "column", 
+            height: "100%",
+            position: "relative" 
+          }}>
+            {/* Header - Fixed */}
             <div
               style={{
                 padding: 20,
                 borderBottom: "1px solid #ddd",
+                backgroundColor: "white",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                flexShrink: 0,
               }}
             >
               <h1 style={{ margin: 0 }}>Ocha</h1>
@@ -189,7 +197,10 @@ export default function Layout() {
                 </button>
               </div>
             </div>
-            <Outlet />
+            {/* Main Content Area */}
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <Outlet />
+            </div>
           </div>
         </div>
       )}

@@ -1,10 +1,11 @@
+import { useChat } from "@ai-sdk/react";
 import type { Message } from "@ocha/types";
-import { useState } from "react";
+import { DefaultChatTransport } from "ai";
+import { useEffect, useState } from "react";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { useLoaderData, useParams, useRevalidator } from "react-router-dom";
+import { useLoaderData, useParams, useSearchParams } from "react-router-dom";
 import { MessageList } from "../../src/components/MessageList";
 import { useAuth } from "../../src/hooks/useAuth";
-import { client } from "../../src/lib/api";
 
 interface ThreadData {
   messages: Message[];
@@ -47,37 +48,76 @@ export async function loader({ params }: LoaderFunctionArgs): Promise<ThreadData
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
   const threadData = useLoaderData() as ThreadData;
+  const [searchParams, setSearchParams] = useSearchParams();
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const { getAuthHeaders } = useAuth();
-  const { revalidate } = useRevalidator();
 
-  // Custom message sending function
+  // Get initial message from URL params (from home navigation)
+  const initialMessage = searchParams.get("message");
+
+  const { messages } = useChat({
+    transport: new DefaultChatTransport({
+      api: "/api/ai/chat",
+      headers: getAuthHeaders,
+      body: () => ({
+        threadId,
+      }),
+    }),
+  });
+
+  // Send initial message if provided from home
+  useEffect(() => {
+    if (initialMessage && threadId) {
+      // Send initial message using fetch directly
+      const sendInitialMessage = async () => {
+        try {
+          const response = await fetch("/api/ai/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...getAuthHeaders(),
+            },
+            body: JSON.stringify({
+              threadId,
+              content: initialMessage,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to send initial message");
+          }
+        } catch (error) {
+          console.error("Error sending initial message:", error);
+        }
+      };
+
+      sendInitialMessage();
+      // Remove the message parameter from URL
+      setSearchParams({});
+    }
+  }, [initialMessage, threadId, getAuthHeaders, setSearchParams]);
+
   const sendMessage = async (message: { text: string }) => {
     if (!threadId) return;
     
-    setIsLoading(true);
     try {
-      const response = await client.api.ai.chat.$post(
-        {
-          json: { threadId, content: message.text },
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
         },
-        {
-          headers: getAuthHeaders(),
-        }
-      );
+        body: JSON.stringify({
+          threadId,
+          content: message.text,
+        }),
+      });
 
       if (!response.ok) {
         throw new Error("Failed to send message");
       }
-
-      // Revalidate to refresh the messages
-      revalidate();
-      setInput("");
     } catch (error) {
       console.error("Error sending message:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -96,12 +136,13 @@ export default function Thread() {
     );
   }
 
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       <MessageList
-        historicalMessages={threadData.messages} // From loader
-        currentMessages={[]} // No current messages since we reload from server
-        isLoadingHistory={isLoading}
+        historicalMessages={threadData.messages}
+        currentMessages={messages as Message[]}
+        isLoadingHistory={false}
         currentThreadId={threadId}
         input={input}
         onInputChange={setInput}

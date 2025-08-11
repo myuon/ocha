@@ -154,8 +154,7 @@ export default function Layout() {
           style={{
             flex: 1,
             display: "flex",
-            overflowY: "auto",
-            maxHeight: "100vh",
+            height: "100%",
           }}
         >
           <ThreadList
@@ -166,19 +165,20 @@ export default function Layout() {
           />
           <div
             style={{
+              height: "100%",
               flex: 1,
+              overflowY: "auto",
               display: "flex",
               flexDirection: "column",
-              height: "100%",
-              position: "relative",
             }}
           >
             {/* Header - Fixed */}
             <div
               style={{
-                padding: 20,
-                borderBottom: "1px solid #ddd",
-                backgroundColor: "white",
+                padding: "12px 18px",
+                backgroundColor: "rgba(255, 255, 255, 0.6)",
+                borderBottom: "1px solid white",
+                backdropFilter: "blur(10px)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -187,7 +187,7 @@ export default function Layout() {
                 top: 0,
               }}
             >
-              <h1 style={{ margin: 0 }}>Ocha</h1>
+              <h1 style={{ margin: 0, fontSize: "24px" }}>Ocha</h1>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <span style={{ fontSize: "0.9em", color: "#666" }}>
                   {currentUser.name} ({currentUser.email})
@@ -209,7 +209,12 @@ export default function Layout() {
               </div>
             </div>
             {/* Main Content Area */}
-            <div style={{ flex: 1, minHeight: 0 }}>
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+              }}
+            >
               <Outlet />
             </div>
           </div>

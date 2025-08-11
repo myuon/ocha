@@ -100,19 +100,19 @@ export function MessageList({
   };
 
   return (
-    <div style={{ 
-      height: "100%", 
-      display: "flex", 
-      flexDirection: "column"
-    }}>
+    <div
+      style={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       {/* Messages Area - Scrollable */}
       <div
         style={{
           flex: 1,
           overflowY: "auto",
           padding: 16,
-          backgroundColor: "#fafafa",
-          minHeight: 0, // Important for flex scrolling
         }}
       >
         {isLoadingHistory && (
@@ -141,7 +141,7 @@ export function MessageList({
               </p>
             </div>
           )}
-        
+
         {/* Invisible element to scroll to */}
         <div ref={messagesEndRef} />
       </div>
@@ -150,9 +150,9 @@ export function MessageList({
       <div
         style={{
           padding: 16,
-          borderTop: "1px solid #ddd",
-          backgroundColor: "white",
           flexShrink: 0, // Prevent input from shrinking
+          position: "sticky",
+          bottom: 0,
         }}
       >
         <form

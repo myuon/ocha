@@ -83,7 +83,7 @@ class DrizzleDatabase {
     const result = await this.db
       .select()
       .from(threads)
-      .orderBy(desc(threads.updatedAt));
+      .orderBy(desc(threads.updatedAt), desc(threads.createdAt));
 
     return result.map((thread) => ({
       id: thread.id,

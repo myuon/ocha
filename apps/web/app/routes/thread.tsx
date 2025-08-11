@@ -8,7 +8,6 @@ import {
   useLocation,
   useNavigate,
   useParams,
-  useSearchParams,
 } from "react-router-dom";
 import { MessageList } from "../../src/components/MessageList";
 import { useAuth } from "../../src/hooks/useAuth";
@@ -53,14 +52,15 @@ export async function loader({
   }
 }
 
-export default function Thread() {
-  const { threadId } = useParams<{ threadId: string }>();
-  const threadData = useLoaderData() as ThreadData;
+interface ThreadChatProps {
+  threadId: string;
+  threadData: ThreadData;
+  initialMessage?: string;
+}
+
+function ThreadChat({ threadId, threadData, initialMessage }: ThreadChatProps) {
   const [input, setInput] = useState("");
   const { getAuthHeaders } = useAuth();
-
-  // Get initial message from URL params (from home navigation)
-  const { state } = useLocation();
   const navigate = useNavigate();
 
   const { messages, sendMessage } = useChat({
@@ -72,10 +72,9 @@ export default function Thread() {
       }),
     }),
   });
-  console.log(messages);
 
   // Send initial message if provided from home
-  const initialMessageRef = useRef(state?.initialMessage);
+  const initialMessageRef = useRef(initialMessage);
   useEffect(() => {
     if (initialMessageRef.current && threadId) {
       // Send initial message using fetch directly
@@ -97,24 +96,7 @@ export default function Thread() {
       initialMessageRef.current = "";
       navigate("", { state: { initialMessage: "" } });
     }
-  }, [threadId, getAuthHeaders]);
-
-  if (!threadId) {
-    return (
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          fontSize: "18px",
-          color: "#666",
-        }}
-      >
-        Thread not found
-      </div>
-    );
-  }
+  }, [threadId, getAuthHeaders, sendMessage, navigate]);
 
   return (
     <MessageList
@@ -141,6 +123,40 @@ export default function Thread() {
           }
         );
       }}
+    />
+  );
+}
+
+export default function Thread() {
+  const { threadId } = useParams<{ threadId: string }>();
+  const threadData = useLoaderData() as ThreadData;
+
+  // Get initial message from URL params (from home navigation)
+  const { state } = useLocation();
+
+  if (!threadId) {
+    return (
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          fontSize: "18px",
+          color: "#666",
+        }}
+      >
+        Thread not found
+      </div>
+    );
+  }
+
+  return (
+    <ThreadChat
+      key={threadId}
+      threadId={threadId}
+      threadData={threadData}
+      initialMessage={state?.initialMessage}
     />
   );
 }

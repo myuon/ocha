@@ -8,7 +8,7 @@ class DrizzleDatabase {
   private db: ReturnType<typeof drizzle>;
   private sqlite: Database.Database;
 
-  constructor(dbPath: string = "../../conversations.db") {
+  constructor(dbPath: string = process.env.NODE_ENV === "production" ? "/app/conversations.db" : "./conversations.db") {
     this.sqlite = new Database(dbPath);
     this.db = drizzle(this.sqlite);
   }

@@ -6,6 +6,8 @@ export default defineConfig({
   out: resolve(__dirname, "apps/api/src/db/migrations"),
   dialect: "sqlite",
   dbCredentials: {
-    url: "file:./conversations.db"
+    url: process.env.NODE_ENV === "production" 
+      ? "file:/app/conversations.db"
+      : "file:./conversations.db"
   }
 });

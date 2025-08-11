@@ -123,8 +123,7 @@ class Database {
     id: string,
     threadId: string,
     role: "user" | "assistant" | "system",
-    content?: string,
-    parts?: unknown[]
+    parts: unknown[]
   ): Promise<Message> {
     // Update thread's updated_at timestamp
     await this.run(
@@ -133,17 +132,16 @@ class Database {
     );
 
     const sql = `
-      INSERT INTO messages (id, thread_id, role, content, parts) 
-      VALUES (?, ?, ?, ?, ?) 
+      INSERT INTO messages (id, thread_id, role, parts) 
+      VALUES (?, ?, ?, ?) 
       RETURNING *
     `;
 
-    const partsJson = parts ? JSON.stringify(parts) : null;
+    const partsJson = JSON.stringify(parts);
     const message = await this.get<Message>(sql, [
       id,
       threadId,
       role,
-      content,
       partsJson,
     ]);
     if (!message) throw new Error("Failed to add message");

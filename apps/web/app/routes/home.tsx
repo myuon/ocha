@@ -33,7 +33,7 @@ export default function Home() {
       // Send message to the API with the new threadId using our API client
       const response = await client.api.ai.chat.$post(
         {
-          json: { messages: [{ role: "user", content: message.text }], threadId },
+          json: { threadId, content: message.text },
         },
         {
           headers: getAuthHeaders(),

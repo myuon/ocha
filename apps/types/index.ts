@@ -20,8 +20,7 @@ export interface Message {
   id: string;
   thread_id: string;
   role: 'user' | 'assistant' | 'system';
-  content?: string; // Optional for backwards compatibility
-  parts?: string | any; // JSON string in DB, parsed object in frontend
+  parts: string | any; // JSON string in DB, parsed object in frontend
   created_at: string;
 }
 

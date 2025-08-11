@@ -91,7 +91,8 @@ const threads = app
         }
 
         const messageId = generateId();
-        const message = await db.addMessage(messageId, threadId, role, content);
+        const parts = [{ type: "text", text: content }];
+        const message = await db.addMessage(messageId, threadId, role, parts);
 
         return c.json({ message }, 201);
       } catch (error) {

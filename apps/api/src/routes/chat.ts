@@ -3,7 +3,6 @@ import { convertToModelMessages, streamText } from "ai";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { nanoid } from "nanoid";
-import type { ToolPart } from "@ocha/types";
 import { config } from "../config/index.js";
 import { ChatRequestSchema } from "../types/chat.js";
 import type { AuthContext } from "../types/auth.js";
@@ -12,6 +11,16 @@ import { requireAuth } from "../middleware/requireAuth.js";
 type Variables = {
   auth: AuthContext;
 };
+
+// Utility function to extract content from parts
+function extractContentFromParts(parts: any[]): string {
+  if (!Array.isArray(parts)) return "";
+  
+  return parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text || part.input?.text || "")
+    .join("");
+}
 
 const app = new Hono<{ Variables: Variables }>();
 
@@ -27,70 +36,54 @@ const chatRoutes = app.post(
     }
 
     try {
-      const { messages, threadId } = c.req.valid("json");
+      const { threadId, content } = c.req.valid("json");
       console.log(
         "Received body:",
-        JSON.stringify({ messages, threadId }, null, 2)
+        JSON.stringify({ threadId, content }, null, 2)
       );
 
-      let allMessages = messages;
+      const { getDatabase } = await import("../db/index.js");
+      const db = await getDatabase();
 
-      // If threadId is provided, get conversation history and merge with current messages
-      if (threadId) {
-        try {
-          const { getDatabase } = await import("../db/index.js");
-          const db = await getDatabase();
+      // Get recent messages from the thread (last 20)  
+      const allThreadMessages = await db.getThreadMessages(threadId);
+      const recentMessages = allThreadMessages.slice(-20);
+      console.log(`Loaded ${recentMessages.length} recent messages for thread ${threadId}`);
 
-          // Get historical messages from the thread
-          const historicalMessages = await db.getThreadMessages(threadId);
-          
-          // Convert historical messages to the format expected by AI SDK
-          const historyInAiFormat = historicalMessages.map((msg: any) => ({
-            id: msg.id,
-            role: msg.role as "user" | "assistant" | "system",
-            content: msg.content,
-            parts: typeof msg.parts === "string" ? JSON.parse(msg.parts) : msg.parts,
-          }));
+      // Convert historical messages to the format expected by AI SDK
+      const historyInAiFormat = recentMessages.map((msg: any) => {
+        const parts = typeof msg.parts === "string" ? JSON.parse(msg.parts) : msg.parts;
+        return {
+          id: msg.id,
+          role: msg.role as "user" | "assistant" | "system",
+          content: extractContentFromParts(parts),
+          parts: parts,
+        };
+      });
 
-          // Combine historical messages with new messages
-          // Remove duplicates based on content to avoid sending the same message twice
-          const newUserMessages = messages.filter((msg: any) => msg.role === "user");
-          const lastHistoricalMessage = historyInAiFormat[historyInAiFormat.length - 1];
-          
-          // Only add new messages that aren't already in history
-          const uniqueNewMessages = newUserMessages.filter((msg: any) => {
-            return !lastHistoricalMessage || msg.content !== lastHistoricalMessage.content;
-          });
+      // Create parts for the new user message
+      const userMessageParts = [{ type: "text", text: content }];
 
-          allMessages = [...historyInAiFormat, ...uniqueNewMessages];
-          console.log(`Loaded ${historicalMessages.length} historical messages for thread ${threadId}`);
+      // Add the new user message
+      const newUserMessage = {
+        id: nanoid(),
+        role: "user" as const,
+        content: content,
+        parts: userMessageParts,
+      };
 
-          // Save the new user message to database
-          if (uniqueNewMessages.length > 0) {
-            const lastMessage = uniqueNewMessages[uniqueNewMessages.length - 1];
-            const messageId = nanoid();
-            const content =
-              lastMessage.content ||
-              (lastMessage.parts
-                ? lastMessage.parts
-                    .filter((part: ToolPart) => part.type === "text")
-                    .map((part: ToolPart) => part.input?.text || "")
-                    .join("")
-                : "");
-            await db.addMessage(
-              messageId,
-              threadId,
-              "user",
-              content,
-              lastMessage.parts
-            );
-            console.log(`Saved user message to thread ${threadId}`);
-          }
-        } catch (error) {
-          console.error("Failed to load thread history or save message:", error);
-          // Don't fail the request if history loading fails, continue with original messages
-        }
-      }
+      // Combine historical messages with new user message
+      const allMessages = [...historyInAiFormat, newUserMessage];
+
+      // Save the new user message to database
+      const messageId = nanoid();
+      await db.addMessage(
+        messageId,
+        threadId,
+        "user",
+        userMessageParts
+      );
+      console.log(`Saved user message to thread ${threadId}`);
 
       // Convert UI messages to model messages
       const modelMessages = convertToModelMessages(allMessages);
@@ -136,8 +129,7 @@ const chatRoutes = app.post(
                 messageId,
                 threadId,
                 "assistant",
-                text,
-                parts.length > 0 ? parts : undefined
+                parts.length > 0 ? parts : [{ type: "text", text: text || "" }]
               );
 
               console.log(`Saved assistant message to thread ${threadId}`);

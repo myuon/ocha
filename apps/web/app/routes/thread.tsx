@@ -1,11 +1,10 @@
-import { useChat } from "@ai-sdk/react";
 import type { Message } from "@ocha/types";
-import { DefaultChatTransport } from "ai";
 import { useState } from "react";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { useLoaderData, useParams } from "react-router-dom";
+import { useLoaderData, useParams, useRevalidator } from "react-router-dom";
 import { MessageList } from "../../src/components/MessageList";
 import { useAuth } from "../../src/hooks/useAuth";
+import { client } from "../../src/lib/api";
 
 interface ThreadData {
   messages: Message[];
@@ -49,17 +48,38 @@ export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
   const threadData = useLoaderData() as ThreadData;
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { getAuthHeaders } = useAuth();
+  const { revalidate } = useRevalidator();
 
-  const { messages, sendMessage } = useChat({
-    transport: new DefaultChatTransport({
-      api: "/api/ai/chat",
-      headers: getAuthHeaders,
-      body: () => ({
-        threadId: threadId || null,
-      }),
-    }),
-  });
+  // Custom message sending function
+  const sendMessage = async (message: { text: string }) => {
+    if (!threadId) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await client.api.ai.chat.$post(
+        {
+          json: { threadId, content: message.text },
+        },
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
+
+      // Revalidate to refresh the messages
+      revalidate();
+      setInput("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (!threadId) {
     return (
@@ -80,8 +100,8 @@ export default function Thread() {
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       <MessageList
         historicalMessages={threadData.messages} // From loader
-        currentMessages={messages as Message[]} // From useChat
-        isLoadingHistory={false}
+        currentMessages={[]} // No current messages since we reload from server
+        isLoadingHistory={isLoading}
         currentThreadId={threadId}
         input={input}
         onInputChange={setInput}

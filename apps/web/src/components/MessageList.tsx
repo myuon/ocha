@@ -83,8 +83,8 @@ export function MessageList({
                 return null;
               })
             ) : (
-              // Fallback to content for backwards compatibility or when parts is not available
-              <div>{message.content || "No content available"}</div>
+              // Fallback when parts is not available
+              <div>No content available</div>
             )}
           </div>
         </div>

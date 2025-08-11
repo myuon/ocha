@@ -33,17 +33,42 @@ const chatRoutes = app.post(
         JSON.stringify({ messages, threadId }, null, 2)
       );
 
-      // Save user message to database if threadId is provided
-      if (threadId && messages.length > 0) {
+      let allMessages = messages;
+
+      // If threadId is provided, get conversation history and merge with current messages
+      if (threadId) {
         try {
           const { getDatabase } = await import("../db/index.js");
           const db = await getDatabase();
 
-          // Get the last message (should be the user's message)
-          const lastMessage = messages[messages.length - 1];
-          if (lastMessage.role === "user") {
+          // Get historical messages from the thread
+          const historicalMessages = await db.getThreadMessages(threadId);
+          
+          // Convert historical messages to the format expected by AI SDK
+          const historyInAiFormat = historicalMessages.map((msg: any) => ({
+            id: msg.id,
+            role: msg.role as "user" | "assistant" | "system",
+            content: msg.content,
+            parts: typeof msg.parts === "string" ? JSON.parse(msg.parts) : msg.parts,
+          }));
+
+          // Combine historical messages with new messages
+          // Remove duplicates based on content to avoid sending the same message twice
+          const newUserMessages = messages.filter((msg: any) => msg.role === "user");
+          const lastHistoricalMessage = historyInAiFormat[historyInAiFormat.length - 1];
+          
+          // Only add new messages that aren't already in history
+          const uniqueNewMessages = newUserMessages.filter((msg: any) => {
+            return !lastHistoricalMessage || msg.content !== lastHistoricalMessage.content;
+          });
+
+          allMessages = [...historyInAiFormat, ...uniqueNewMessages];
+          console.log(`Loaded ${historicalMessages.length} historical messages for thread ${threadId}`);
+
+          // Save the new user message to database
+          if (uniqueNewMessages.length > 0) {
+            const lastMessage = uniqueNewMessages[uniqueNewMessages.length - 1];
             const messageId = nanoid();
-            // Save both content and parts for full message preservation
             const content =
               lastMessage.content ||
               (lastMessage.parts
@@ -62,13 +87,13 @@ const chatRoutes = app.post(
             console.log(`Saved user message to thread ${threadId}`);
           }
         } catch (error) {
-          console.error("Failed to save user message:", error);
-          // Don't fail the request if saving fails
+          console.error("Failed to load thread history or save message:", error);
+          // Don't fail the request if history loading fails, continue with original messages
         }
       }
 
       // Convert UI messages to model messages
-      const modelMessages = convertToModelMessages(messages);
+      const modelMessages = convertToModelMessages(allMessages);
 
       const openai = createOpenAI({ apiKey });
 

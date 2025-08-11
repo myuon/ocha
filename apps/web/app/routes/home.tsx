@@ -16,9 +16,13 @@ export default function Home() {
     try {
       // Create a new thread
       const threadId = await createThread();
-      
+
       // Navigate to the new thread with the initial message
-      navigate(`/threads/${threadId}?message=${encodeURIComponent(input.trim())}`);
+      navigate(`/threads/${threadId}`, {
+        state: {
+          initialMessage: input.trim(),
+        },
+      });
     } catch (error) {
       console.error("Error creating thread:", error);
       setIsCreating(false);
@@ -26,41 +30,52 @@ export default function Home() {
   };
 
   return (
-    <div style={{ 
-      flex: 1, 
-      display: "flex", 
-      flexDirection: "column", 
-      justifyContent: "center", 
-      alignItems: "center",
-      padding: "2rem",
-      gap: "2rem"
-    }}>
-      <div style={{ 
-        textAlign: "center",
-        maxWidth: "600px"
-      }}>
-        <h1 style={{ 
-          fontSize: "2.5rem", 
-          marginBottom: "1rem",
-          color: "#333"
-        }}>
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "2rem",
+        gap: "2rem",
+      }}
+    >
+      <div
+        style={{
+          textAlign: "center",
+          maxWidth: "600px",
+        }}
+      >
+        <h1
+          style={{
+            fontSize: "2.5rem",
+            marginBottom: "1rem",
+            color: "#333",
+          }}
+        >
           Start a New Conversation
         </h1>
-        <p style={{ 
-          fontSize: "1.2rem", 
-          color: "#666",
-          marginBottom: "2rem"
-        }}>
+        <p
+          style={{
+            fontSize: "1.2rem",
+            color: "#666",
+            marginBottom: "2rem",
+          }}
+        >
           Ask me anything to begin a new thread
         </p>
       </div>
 
-      <form onSubmit={handleStartThread} style={{ 
-        width: "100%", 
-        maxWidth: "600px",
-        display: "flex",
-        gap: "1rem"
-      }}>
+      <form
+        onSubmit={handleStartThread}
+        style={{
+          width: "100%",
+          maxWidth: "600px",
+          display: "flex",
+          gap: "1rem",
+        }}
+      >
         <input
           type="text"
           value={input}
@@ -76,8 +91,8 @@ export default function Home() {
             outline: "none",
             transition: "border-color 0.2s",
           }}
-          onFocus={(e) => e.target.style.borderColor = "#007bff"}
-          onBlur={(e) => e.target.style.borderColor = "#ddd"}
+          onFocus={(e) => (e.target.style.borderColor = "#007bff")}
+          onBlur={(e) => (e.target.style.borderColor = "#ddd")}
         />
         <button
           type="submit"
@@ -91,7 +106,7 @@ export default function Home() {
             borderRadius: "8px",
             cursor: !input.trim() || isCreating ? "not-allowed" : "pointer",
             transition: "background-color 0.2s",
-            minWidth: "120px"
+            minWidth: "120px",
           }}
         >
           {isCreating ? "Creating..." : "Start Chat"}

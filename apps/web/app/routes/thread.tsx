@@ -1,9 +1,15 @@
 import { useChat } from "@ai-sdk/react";
 import type { Message } from "@ocha/types";
 import { DefaultChatTransport } from "ai";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { useLoaderData, useParams, useSearchParams } from "react-router-dom";
+import {
+  useLoaderData,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import { MessageList } from "../../src/components/MessageList";
 import { useAuth } from "../../src/hooks/useAuth";
 
@@ -50,12 +56,12 @@ export async function loader({
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
   const threadData = useLoaderData() as ThreadData;
-  const [searchParams, setSearchParams] = useSearchParams();
   const [input, setInput] = useState("");
   const { getAuthHeaders } = useAuth();
 
   // Get initial message from URL params (from home navigation)
-  const initialMessage = searchParams.get("message");
+  const { state } = useLocation();
+  const navigate = useNavigate();
 
   const { messages, sendMessage } = useChat({
     transport: new DefaultChatTransport({
@@ -69,36 +75,29 @@ export default function Thread() {
   console.log(messages);
 
   // Send initial message if provided from home
+  const initialMessageRef = useRef(state?.initialMessage);
   useEffect(() => {
-    if (initialMessage && threadId) {
+    if (initialMessageRef.current && threadId) {
       // Send initial message using fetch directly
-      const sendInitialMessage = async () => {
-        try {
-          const response = await fetch("/api/ai/chat", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...getAuthHeaders(),
-            },
-            body: JSON.stringify({
-              threadId,
-              content: initialMessage,
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error("Failed to send initial message");
-          }
-        } catch (error) {
-          console.error("Error sending initial message:", error);
+      sendMessage(
+        {
+          role: "user",
+          parts: [{ type: "text", text: initialMessageRef.current }],
+        },
+        {
+          body: {
+            threadId,
+          },
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+          },
         }
-      };
-
-      sendInitialMessage();
-      // Remove the message parameter from URL
-      setSearchParams({});
+      );
+      initialMessageRef.current = "";
+      navigate("", { state: { initialMessage: "" } });
     }
-  }, [initialMessage, threadId, getAuthHeaders, setSearchParams]);
+  }, [threadId, getAuthHeaders]);
 
   if (!threadId) {
     return (

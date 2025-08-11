@@ -11,6 +11,7 @@ import threadsRoutes from "./routes/threads.js";
 import verifyAuthRoutes from "./routes/verifyAuth.js";
 import { setupGracefulShutdown } from "./utils/server.js";
 import { cors } from "hono/cors";
+import { logger } from "hono/logger";
 
 const app = new Hono();
 
@@ -18,25 +19,27 @@ app
   // Global error handling
   .use("*", errorHandler)
   .use("*", cors())
-  .use("/api/auth/*", requireAuth)
+  .use("*", logger())
+  .use("/api/auth/verify", requireAuth)
   .use("/api/ai/*", requireAuth)
+  .use("/api/threads/*", requireAuth)
   // Serve frontend build (production)
   // assets under dist/public (copied during build)
-  .use("/assets/*", serveStatic({ root: config.static.root }))
-  // SPA fallback for any non-API route
-  .get("*", serveStatic({ path: config.static.indexPath }));
+  .use("/assets/*", serveStatic({ root: config.static.root }));
 
 const route = app
   // Health check
   .route("/health", healthRoutes)
 
-  // API routes
+  // Public auth routes (no authentication required)
   .route("/api/auth", authRoutes)
+
+  // Protected routes (authentication required)
   .route("/api/auth", verifyAuthRoutes)
   .route("/api/ai", chatRoutes)
-
-  // Thread routes
-  .route("/api/threads", threadsRoutes);
+  .route("/api/threads", threadsRoutes)
+  // SPA fallback for any non-API route
+  .get("*", serveStatic({ path: config.static.indexPath }));
 
 console.log(`API listening on http://localhost:${config.port}`);
 

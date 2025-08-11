@@ -15,31 +15,16 @@ import { client, getAuthHeaders } from "../../src/lib/api";
 export async function loader() {
   // Server-side rendering時はlocalStorageが使用できないため、クライアント専用
   if (typeof window === "undefined") {
-    return { user: null, threads: [] };
+    return { threads: [] };
   }
 
   const token = localStorage.getItem("auth_token");
 
   if (!token) {
-    return { user: null, threads: [] };
+    return { threads: [] };
   }
 
   try {
-    // Verify token
-    const authResponse = await client.api.auth.verify.$post(
-      {},
-      {
-        headers: getAuthHeaders(),
-      }
-    );
-
-    if (!authResponse.ok) {
-      localStorage.removeItem("auth_token");
-      return { user: null, threads: [] };
-    }
-
-    const authData = await authResponse.json();
-
     // Fetch threads
     const threadsResponse = await client.api.threads.$get(
       {},
@@ -54,11 +39,10 @@ export async function loader() {
       threads = threadsData.threads;
     }
 
-    return { user: authData.user, threads };
+    return { threads };
   } catch (error) {
-    console.error("Auth/threads loading error:", error);
-    localStorage.removeItem("auth_token");
-    return { user: null, threads: [] };
+    console.error("Threads loading error:", error);
+    return { threads: [] };
   }
 }
 
@@ -68,9 +52,9 @@ export default function Layout() {
   const navigate = useNavigate();
   const { user, signIn, signOut, setAuthError } = useAuth();
 
-  // Use loader data as initial state, but let useAuth manage auth state
-  const currentUser = user || initialData.user;
-  const threads = initialData.threads; // loader data for initial threads
+  // Use useAuth for user state and loader data for initial threads
+  const currentUser = user;
+  const threads = initialData.threads;
 
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(() => {
     // Extract thread ID from URL path

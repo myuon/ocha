@@ -142,7 +142,7 @@ const chatRoutes = app.post(
             },
           }),
         },
-        async onFinish({ text }) {
+        async onFinish({ text, toolCalls, toolResults }) {
           // Save conversation to database if threadId is provided
           if (threadId) {
             try {
@@ -153,15 +153,19 @@ const chatRoutes = app.post(
               const messageId = nanoid();
 
               // Create parts array for assistant message
-              const parts = [];
+              const parts: unknown[] = [];
+              // Add tool results to parts if they exist
+              if (toolResults && toolResults.length > 0) {
+                for (const toolResult of toolResults) {
+                  parts.push({
+                    ...toolResult,
+                  });
+                }
+              }
+
               if (text) {
                 parts.push({ type: "text", text });
               }
-
-              // Note: Tool calls and results are handled automatically by the AI SDK
-              // and will be included in the streaming response to the client.
-              // For now, we'll just save the text content. Tool information
-              // can be added later when we have access to the full response structure.
 
               // Save the assistant's response with parts
               await db.addMessage(

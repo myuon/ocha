@@ -3,7 +3,6 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { config } from "./config/index.js";
 import { errorHandler } from "./middleware/error.js";
-import { requireAuth } from "./middleware/requireAuth.js";
 import authRoutes from "./routes/auth.js";
 import chatRoutes from "./routes/chat.js";
 import healthRoutes from "./routes/health.js";
@@ -32,7 +31,7 @@ const route = app
   .route("/api/auth", authRoutes)
 
   // Protected routes (authentication required)
-  .route("/api/verify", verifyAuthRoutes)
+  .route("/api/auth", verifyAuthRoutes)
   .route("/api/ai", chatRoutes)
   .route("/api/threads", threadsRoutes)
   // SPA fallback for any non-API route

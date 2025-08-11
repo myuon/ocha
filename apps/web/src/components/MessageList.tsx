@@ -1,6 +1,7 @@
 import type { Message, ToolPart } from "@ocha/types";
 import { Markdown } from "./Markdown";
 import { ToolDisplay } from "./ToolDisplay";
+import { UIMessagePart } from "ai";
 
 interface MessageListProps {
   historicalMessages: Message[];
@@ -61,7 +62,7 @@ export function MessageList({
           </strong>
           <div style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap" }}>
             {parts && Array.isArray(parts) ? (
-              parts.map((part: ToolPart, index: number) => {
+              parts.map((part: UIMessagePart<{}, {}>, index: number) => {
                 if (part.type === "text") {
                   return (
                     <Markdown

@@ -4,9 +4,6 @@ import { drizzle } from "drizzle-orm/sqlite-proxy";
 import { messages, threads } from "./schema.js";
 
 export async function createDbConnection() {
-  if (process.env.NODE_ENV === "production")
-    console.warn("Using production database");
-
   return drizzle(async (sql, params, method) => {
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
     const databaseId = process.env.CLOUDFLARE_D1_DATABASE_ID;
@@ -71,7 +68,11 @@ class DrizzleDatabase {
     console.log("Database initialized with Drizzle ORM and Cloudflare D1");
   }
 
-  async createThread(id: string, userId: string, title?: string): Promise<Thread> {
+  async createThread(
+    id: string,
+    userId: string,
+    title?: string
+  ): Promise<Thread> {
     const [thread] = await this.db
       .insert(threads)
       .values({ id, userId, title })

@@ -36,11 +36,18 @@ const chatRoutes = app.post(
     }
 
     try {
-      const { threadId, content } = c.req.valid("json");
-      console.log(
-        "Received body:",
-        JSON.stringify({ threadId, content }, null, 2)
-      );
+      const requestBody = c.req.valid("json");
+      console.log("Received body:", JSON.stringify(requestBody, null, 2));
+
+      const { threadId, messages } = requestBody;
+      
+      // Extract the latest user message from the messages array
+      const userMessages = messages.filter((msg: any) => msg.role === "user");
+      const latestUserMessage = userMessages[userMessages.length - 1];
+      
+      if (!latestUserMessage) {
+        return c.json({ error: "No user message found" }, 400);
+      }
 
       const { getDatabase } = await import("../db/index.js");
       const db = await getDatabase();
@@ -61,27 +68,29 @@ const chatRoutes = app.post(
         };
       });
 
-      // Create parts for the new user message
-      const userMessageParts = [{ type: "text", text: content }];
+      // Extract content from the latest user message parts
+      const userContent = extractContentFromParts(latestUserMessage.parts);
+
+      // Generate new ID for the user message
+      const userMessageId = nanoid();
 
       // Add the new user message
       const newUserMessage = {
-        id: nanoid(),
+        id: userMessageId,
         role: "user" as const,
-        content: content,
-        parts: userMessageParts,
+        content: userContent,
+        parts: latestUserMessage.parts,
       };
 
       // Combine historical messages with new user message
       const allMessages = [...historyInAiFormat, newUserMessage];
 
       // Save the new user message to database
-      const messageId = nanoid();
       await db.addMessage(
-        messageId,
+        userMessageId,
         threadId,
         "user",
-        userMessageParts
+        latestUserMessage.parts
       );
       console.log(`Saved user message to thread ${threadId}`);
 

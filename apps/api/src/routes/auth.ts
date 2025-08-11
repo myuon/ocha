@@ -1,28 +1,15 @@
 import { OAuth2Client } from "google-auth-library";
-import type { Context } from "hono";
+import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
 import { config } from "../config/index.js";
 import { GoogleTokenSchema, type User } from "../types/auth.js";
 
 const client = new OAuth2Client(config.google.clientId);
 
-export const googleAuthHandler = async (c: Context) => {
+const authRoutes = new Hono()
+  .post("/google", zValidator("json", GoogleTokenSchema), async (c) => {
   try {
-    const body = await c.req.json();
-
-    // Validate request body with Zod
-    const parseResult = GoogleTokenSchema.safeParse(body);
-    if (!parseResult.success) {
-      console.error("Auth validation error:", parseResult.error.issues);
-      return c.json(
-        {
-          error: "Invalid request format",
-          details: parseResult.error.issues,
-        },
-        400
-      );
-    }
-
-    const { credential } = parseResult.data;
+    const { credential } = c.req.valid("json");
 
     // Verify the Google ID token
     const ticket = await client.verifyIdToken({
@@ -70,4 +57,6 @@ export const googleAuthHandler = async (c: Context) => {
     console.error("Google auth error:", error);
     return c.json({ error: "Authentication failed" }, 401);
   }
-};
+  });
+
+export default authRoutes;

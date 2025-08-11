@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { MessageList } from "../../src/components/MessageList";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useThreads } from "../../src/hooks/useThreads";
+import { client, getAuthHeaders } from "../../src/lib/api";
 
 export default function Home() {
   const [input, setInput] = useState("");
@@ -13,7 +14,7 @@ export default function Home() {
   const { getAuthHeaders } = useAuth();
   const { createThread } = useThreads(); // SWR for thread creation (auxiliary)
 
-  const { messages, sendMessage: originalSendMessage } = useChat({
+  const { messages } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
       headers: getAuthHeaders,
@@ -29,18 +30,15 @@ export default function Home() {
       // Create a new thread first using SWR (auxiliary usage)
       const threadId = await createThread();
       
-      // Send message to the API with the new threadId
-      const response = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
+      // Send message to the API with the new threadId using our API client
+      const response = await client.api.ai.chat.$post(
+        {
+          json: { messages: [{ role: "user", content: message.text }], threadId },
         },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: message.text }],
-          threadId,
-        }),
-      });
+        {
+          headers: getAuthHeaders(),
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to send message");

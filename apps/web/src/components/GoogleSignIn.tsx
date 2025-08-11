@@ -1,6 +1,7 @@
 import type { User } from "@ocha/types";
 import { useEffect, useRef } from "react";
 import { CLIENT_ID } from "../config";
+import { client, getAuthHeaders } from "../lib/api";
 
 interface GoogleSignInProps {
   onSignIn: (user: User) => void;
@@ -17,26 +18,33 @@ export function GoogleSignIn({ onSignIn, onError }: GoogleSignInProps) {
       credential: string;
     }) => {
       try {
-        const result = await fetch("/api/auth/google", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        const result = await client.api.auth.google.$post(
+          {
+            json: { credential: response.credential },
           },
-          body: JSON.stringify({
-            credential: response.credential,
-          }),
-        });
-
+          {
+            headers: getAuthHeaders(),
+          }
+        );
         const data = await result.json();
 
-        if (result.ok && data.success) {
-          // Store JWT token in localStorage
-          if (data.token) {
-            localStorage.setItem("auth_token", data.token);
+        if (result.ok) {
+          // Type guard to check if response has success property
+          if ("success" in data && data.success) {
+            // Store JWT token in localStorage
+            if ("token" in data && data.token) {
+              localStorage.setItem("auth_token", data.token);
+            }
+            if ("user" in data) {
+              onSignIn(data.user);
+            }
+          } else {
+            const errorMsg = "error" in data ? data.error : "Authentication failed";
+            onError(errorMsg);
           }
-          onSignIn(data.user);
         } else {
-          onError(data.error || "Authentication failed");
+          const errorMsg = "error" in data ? data.error : "Authentication failed";
+          onError(errorMsg);
         }
       } catch (error) {
         console.error("Auth error:", error);

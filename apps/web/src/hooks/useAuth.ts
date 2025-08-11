@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { User } from "@ocha/types";
+import { client } from "../lib/api";
 
 interface UseAuthReturn {
   user: User | null;
@@ -57,14 +58,11 @@ export function useAuth(): UseAuthReturn {
     setTokenState(storedToken);
 
     try {
-      const response = await fetch("/api/auth/verify", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${storedToken}`,
-          "Content-Type": "application/json",
-        },
+      const response = await client.api.auth.verify.$post({
+        json: {},
+        header: getAuthHeaders(),
       });
-
+      
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
@@ -84,7 +82,7 @@ export function useAuth(): UseAuthReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [getAuthHeaders]);
 
   // Check for existing token on mount
   useEffect(() => {

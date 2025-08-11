@@ -1,13 +1,16 @@
 import useSWR from 'swr';
 import type { Thread } from '@ocha/types';
 import { useAuth } from './useAuth';
+import { client, getAuthHeaders } from '../lib/api';
 
 interface ThreadsResponse {
   threads: Thread[];
 }
 
-const fetcher = async (url: string, headers: Record<string, string>) => {
-  const response = await fetch(url, { headers });
+const fetcher = async () => {
+  const response = await client.api.threads.$get({
+    header: getAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch threads');
   }
@@ -15,11 +18,11 @@ const fetcher = async (url: string, headers: Record<string, string>) => {
 };
 
 export function useThreads() {
-  const { user, getAuthHeaders } = useAuth();
+  const { user } = useAuth();
   
   const { data, error, isLoading, mutate } = useSWR<ThreadsResponse>(
-    user ? ['/api/threads', getAuthHeaders()] : null,
-    ([url, headers]: [string, Record<string, string>]) => fetcher(url, headers),
+    user ? 'threads' : null,
+    fetcher,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
@@ -27,22 +30,27 @@ export function useThreads() {
   );
 
   const createThread = async (): Promise<string> => {
-    const response = await fetch("/api/threads", {
-      method: "POST",
-      headers: {
-        ...getAuthHeaders(),
-        "Content-Type": "application/json",
+    const response = await client.api.threads.$post(
+      {
+        json: { title: undefined },
       },
-      body: JSON.stringify({}),
-    });
-
+      {
+        headers: getAuthHeaders(),
+      }
+    );
     const responseData = await response.json();
+    
     if (response.ok) {
-      // Revalidate threads after creation
-      mutate();
-      return responseData.thread.id;
+      // Type guard to check if response has thread property
+      if ("thread" in responseData && responseData.thread) {
+        // Revalidate threads after creation
+        mutate();
+        return responseData.thread.id;
+      }
+      throw new Error("Invalid response: missing thread data");
     }
-    throw new Error(responseData.error || "Failed to create thread");
+    const errorMsg = "error" in responseData ? responseData.error : "Failed to create thread";
+    throw new Error(errorMsg);
   };
 
   return {

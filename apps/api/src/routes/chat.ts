@@ -1,35 +1,27 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { convertToModelMessages, streamText } from "ai";
-import type { Context } from "hono";
+import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
 import { nanoid } from "nanoid";
 import type { ToolPart } from "@ocha/types";
 import { config } from "../config/index.js";
 import { ChatRequestSchema } from "../types/chat.js";
+import type { AuthContext } from "../types/auth.js";
 
-export const chatHandler = async (c: Context) => {
+type Variables = {
+  auth: AuthContext;
+};
+
+const chatRoutes = new Hono<{ Variables: Variables }>()
+  .post("/chat", zValidator("json", ChatRequestSchema), async (c) => {
   const { apiKey } = config.openai;
   if (!apiKey) {
     return c.json({ error: "OPENAI_API_KEY is not set" }, 500);
   }
 
   try {
-    const body = await c.req.json();
-    console.log("Received body:", JSON.stringify(body, null, 2));
-
-    // Validate request body with Zod
-    const parseResult = ChatRequestSchema.safeParse(body);
-    if (!parseResult.success) {
-      console.error("Validation error:", parseResult.error.issues);
-      return c.json(
-        {
-          error: "Invalid request format",
-          details: parseResult.error.issues,
-        },
-        400
-      );
-    }
-
-    const { messages, threadId } = parseResult.data;
+    const { messages, threadId } = c.req.valid("json");
+    console.log("Received body:", JSON.stringify({ messages, threadId }, null, 2));
 
     // Save user message to database if threadId is provided
     if (threadId && messages.length > 0) {
@@ -127,4 +119,6 @@ export const chatHandler = async (c: Context) => {
     console.error("Chat API error:", error);
     return c.json({ error: "Internal server error" }, 500);
   }
-};
+  });
+
+export default chatRoutes;

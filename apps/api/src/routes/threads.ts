@@ -1,9 +1,8 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getDatabase } from "../db/index.js";
-
-const threads = new Hono();
 
 // Validation schemas
 const createThreadSchema = z.object({
@@ -20,8 +19,9 @@ function generateId(): string {
   return nanoid();
 }
 
-// GET /threads - Get all threads
-threads.get("/", async (c) => {
+const threads = new Hono()
+  // GET /threads - Get all threads
+  .get("/", async (c) => {
   try {
     const db = await getDatabase();
     const threadList = await db.getAllThreads();
@@ -30,13 +30,12 @@ threads.get("/", async (c) => {
     console.error("Error fetching threads:", error);
     return c.json({ error: "Failed to fetch threads" }, 500);
   }
-});
-
-// POST /threads - Create new thread
-threads.post("/", async (c) => {
+  })
+  
+  // POST /threads - Create new thread
+  .post("/", zValidator("json", createThreadSchema), async (c) => {
   try {
-    const body = await c.req.json();
-    const { title } = createThreadSchema.parse(body);
+    const { title } = c.req.valid("json");
 
     const db = await getDatabase();
     const threadId = generateId();
@@ -45,18 +44,12 @@ threads.post("/", async (c) => {
     return c.json({ thread }, 201);
   } catch (error) {
     console.error("Error creating thread:", error);
-    if (error instanceof z.ZodError) {
-      return c.json(
-        { error: "Invalid request body", details: error.issues },
-        400
-      );
-    }
     return c.json({ error: "Failed to create thread" }, 500);
   }
-});
-
-// GET /threads/:threadId - Get specific thread with messages
-threads.get("/:threadId", async (c) => {
+  })
+  
+  // GET /threads/:threadId - Get specific thread with messages
+  .get("/:threadId", async (c) => {
   try {
     const threadId = c.req.param("threadId");
     const db = await getDatabase();
@@ -73,14 +66,13 @@ threads.get("/:threadId", async (c) => {
     console.error("Error fetching thread:", error);
     return c.json({ error: "Failed to fetch thread" }, 500);
   }
-});
-
-// POST /threads/:threadId/messages - Add message to thread
-threads.post("/:threadId/messages", async (c) => {
+  })
+  
+  // POST /threads/:threadId/messages - Add message to thread
+  .post("/:threadId/messages", zValidator("json", addMessageSchema), async (c) => {
   try {
     const threadId = c.req.param("threadId");
-    const body = await c.req.json();
-    const { role, content } = addMessageSchema.parse(body);
+    const { role, content } = c.req.valid("json");
 
     const db = await getDatabase();
 
@@ -96,18 +88,12 @@ threads.post("/:threadId/messages", async (c) => {
     return c.json({ message }, 201);
   } catch (error) {
     console.error("Error adding message:", error);
-    if (error instanceof z.ZodError) {
-      return c.json(
-        { error: "Invalid request body", details: error.issues },
-        400
-      );
-    }
     return c.json({ error: "Failed to add message" }, 500);
   }
-});
-
-// DELETE /threads/:threadId - Delete thread
-threads.delete("/:threadId", async (c) => {
+  })
+  
+  // DELETE /threads/:threadId - Delete thread
+  .delete("/:threadId", async (c) => {
   try {
     const threadId = c.req.param("threadId");
     const db = await getDatabase();
@@ -124,6 +110,6 @@ threads.delete("/:threadId", async (c) => {
     console.error("Error deleting thread:", error);
     return c.json({ error: "Failed to delete thread" }, 500);
   }
-});
+  });
 
 export default threads;

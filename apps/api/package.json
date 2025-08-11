@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    "./types/*": "./src/types/*"
+    "./types/*": "./src/types/*",
+    ".": "./src/index.ts"
   },
   "scripts": {
     "dev": "node scripts/dev-runner.mjs",
@@ -20,12 +21,13 @@
   "dependencies": {
     "@ai-sdk/openai": "^2.0.7",
     "@hono/node-server": "^1.11.7",
+    "@hono/zod-validator": "^0.7.2",
     "@ocha/types": "file:../types",
     "@types/sqlite3": "^3.1.11",
     "ai": "^5.0.8",
     "dotenv": "^17.2.1",
     "google-auth-library": "^10.2.1",
-    "hono": "^4.5.4",
+    "hono": "^4.9.0",
     "nanoid": "^5.1.5",
     "sqlite3": "^5.1.7",
     "zod": "^4.0.17"

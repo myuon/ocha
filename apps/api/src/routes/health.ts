@@ -9,7 +9,8 @@ healthRoutes.get("/", async (c) => {
     const db = await getDatabase();
 
     // Simple test query to verify Drizzle is working
-    const threads = await db.getAllThreads();
+    // For health check, we'll just test with an empty user ID
+    const threads = await db.getAllThreads("test-user");
 
     return c.json({
       ok: true,

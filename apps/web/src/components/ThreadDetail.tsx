@@ -8,6 +8,7 @@ interface ThreadDetailProps {
   isLoadingHistory: boolean;
   currentThreadId: string | null;
   input: string;
+  isOwner: boolean;
   onInputChange: (value: string) => void;
   onSendMessage: (message: { text: string }) => void;
   onSignOut: () => void;
@@ -20,6 +21,7 @@ export function ThreadDetail({
   isLoadingHistory,
   currentThreadId,
   input,
+  isOwner,
   onInputChange,
   onSendMessage,
   onSignOut,
@@ -70,6 +72,7 @@ export function ThreadDetail({
           isLoadingHistory={isLoadingHistory}
           currentThreadId={currentThreadId}
           input={input}
+          isOwner={isOwner}
           onInputChange={onInputChange}
           onSendMessage={onSendMessage}
         />

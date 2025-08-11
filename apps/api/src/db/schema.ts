@@ -7,12 +7,8 @@ export const threads = sqliteTable(
     id: text("id").primaryKey(),
     userId: text("user_id").notNull().default(""),
     title: text("title"),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: text("updated_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [index("idx_threads_user_id").on(table.userId)]
 );
@@ -24,9 +20,7 @@ export const messages = sqliteTable(
     threadId: text("thread_id").notNull(),
     role: text("role", { enum: ["user", "assistant", "system"] }).notNull(),
     parts: text("parts").notNull(), // JSON string
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
     index("idx_messages_thread_id").on(table.threadId),

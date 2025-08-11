@@ -60,7 +60,7 @@ export function MessageList({
           >
             {message.role === "user" ? "You:" : "AI:"}
           </strong>
-          <div style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap" }}>
+          <div style={{ margin: "8px 0 0 0" }}>
             {parts && Array.isArray(parts) ? (
               parts.map((part: UIMessagePart<{}, {}>, index: number) => {
                 if (part.type === "text") {

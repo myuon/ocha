@@ -11,16 +11,18 @@ interface ThreadData {
   messages: Message[];
 }
 
-export async function loader({ params }: LoaderFunctionArgs): Promise<ThreadData> {
+export async function loader({
+  params,
+}: LoaderFunctionArgs): Promise<ThreadData> {
   const { threadId } = params;
-  
+
   // Server-side rendering時はlocalStorageが使用できないため、クライアント専用
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return { messages: [] };
   }
 
   const token = localStorage.getItem("auth_token");
-  
+
   if (!token || !threadId) {
     return { messages: [] };
   }
@@ -55,7 +57,7 @@ export default function Thread() {
   // Get initial message from URL params (from home navigation)
   const initialMessage = searchParams.get("message");
 
-  const { messages } = useChat({
+  const { messages, sendMessage } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
       headers: getAuthHeaders,
@@ -64,6 +66,7 @@ export default function Thread() {
       }),
     }),
   });
+  console.log(messages);
 
   // Send initial message if provided from home
   useEffect(() => {
@@ -97,45 +100,22 @@ export default function Thread() {
     }
   }, [initialMessage, threadId, getAuthHeaders, setSearchParams]);
 
-  const sendMessage = async (message: { text: string }) => {
-    if (!threadId) return;
-    
-    try {
-      const response = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({
-          threadId,
-          content: message.text,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to send message");
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-    }
-  };
-
   if (!threadId) {
     return (
-      <div style={{
-        flex: 1,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        fontSize: "18px",
-        color: "#666"
-      }}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          fontSize: "18px",
+          color: "#666",
+        }}
+      >
         Thread not found
       </div>
     );
   }
-
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
@@ -146,7 +126,23 @@ export default function Thread() {
         currentThreadId={threadId}
         input={input}
         onInputChange={setInput}
-        onSendMessage={sendMessage}
+        onSendMessage={({ text }) => {
+          sendMessage(
+            {
+              role: "user",
+              parts: [{ type: "text", text: text }],
+            },
+            {
+              body: {
+                threadId,
+              },
+              headers: {
+                "Content-Type": "application/json",
+                ...getAuthHeaders(),
+              },
+            }
+          );
+        }}
       />
     </div>
   );

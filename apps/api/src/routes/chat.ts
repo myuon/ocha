@@ -1,12 +1,12 @@
 import { createOpenAI } from "@ai-sdk/openai";
+import { zValidator } from "@hono/zod-validator";
 import { convertToModelMessages, streamText } from "ai";
 import { Hono } from "hono";
-import { zValidator } from "@hono/zod-validator";
 import { nanoid } from "nanoid";
 import { config } from "../config/index.js";
-import { ChatRequestSchema } from "../types/chat.js";
-import type { AuthContext } from "../types/auth.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import type { AuthContext } from "../types/auth.js";
+import { ChatRequestSchema } from "../types/chat.js";
 
 type Variables = {
   auth: AuthContext;
@@ -15,7 +15,7 @@ type Variables = {
 // Utility function to extract content from parts
 function extractContentFromParts(parts: any[]): string {
   if (!Array.isArray(parts)) return "";
-  
+
   return parts
     .filter((part) => part.type === "text")
     .map((part) => part.text || part.input?.text || "")
@@ -40,11 +40,11 @@ const chatRoutes = app.post(
       console.log("Received body:", JSON.stringify(requestBody, null, 2));
 
       const { threadId, messages } = requestBody;
-      
+
       // Extract the latest user message from the messages array
       const userMessages = messages.filter((msg: any) => msg.role === "user");
       const latestUserMessage = userMessages[userMessages.length - 1];
-      
+
       if (!latestUserMessage) {
         return c.json({ error: "No user message found" }, 400);
       }
@@ -52,14 +52,17 @@ const chatRoutes = app.post(
       const { getDatabase } = await import("../db/index.js");
       const db = await getDatabase();
 
-      // Get recent messages from the thread (last 20)  
+      // Get recent messages from the thread (last 20)
       const allThreadMessages = await db.getThreadMessages(threadId);
       const recentMessages = allThreadMessages.slice(-20);
-      console.log(`Loaded ${recentMessages.length} recent messages for thread ${threadId}`);
+      console.log(
+        `Loaded ${recentMessages.length} recent messages for thread ${threadId}`
+      );
 
       // Convert historical messages to the format expected by AI SDK
       const historyInAiFormat = recentMessages.map((msg: any) => {
-        const parts = typeof msg.parts === "string" ? JSON.parse(msg.parts) : msg.parts;
+        const parts =
+          typeof msg.parts === "string" ? JSON.parse(msg.parts) : msg.parts;
         return {
           id: msg.id,
           role: msg.role as "user" | "assistant" | "system",

@@ -1,6 +1,6 @@
+import { zValidator } from "@hono/zod-validator";
 import { OAuth2Client } from "google-auth-library";
 import { Hono } from "hono";
-import { zValidator } from "@hono/zod-validator";
 import { config } from "../config/index.js";
 import { GoogleTokenSchema, type User } from "../types/auth.js";
 

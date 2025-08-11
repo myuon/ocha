@@ -1,6 +1,8 @@
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { logger } from "hono/logger";
 import { config } from "./config/index.js";
 import { errorHandler } from "./middleware/error.js";
 import authRoutes from "./routes/auth.js";
@@ -9,8 +11,6 @@ import healthRoutes from "./routes/health.js";
 import threadsRoutes from "./routes/threads.js";
 import verifyAuthRoutes from "./routes/verifyAuth.js";
 import { setupGracefulShutdown } from "./utils/server.js";
-import { cors } from "hono/cors";
-import { logger } from "hono/logger";
 
 const app = new Hono();
 

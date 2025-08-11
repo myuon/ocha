@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import type { AuthContext } from "../types/auth.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import type { AuthContext } from "../types/auth.js";
 
 type Variables = {
   auth: AuthContext;

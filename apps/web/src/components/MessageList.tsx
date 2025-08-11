@@ -1,8 +1,8 @@
 import type { Message, ToolPart } from "@ocha/types";
+import type { UIMessagePart } from "ai";
 import { useEffect, useRef } from "react";
 import { Markdown } from "./Markdown";
 import { ToolDisplay } from "./ToolDisplay";
-import { UIMessagePart } from "ai";
 
 interface MessageListProps {
   historicalMessages: Message[];

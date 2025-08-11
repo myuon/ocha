@@ -1,11 +1,12 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
 import type { User } from "@ocha/types";
+import type React from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { client } from "../lib/api";
 
 interface AuthContextType {

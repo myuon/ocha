@@ -1,7 +1,7 @@
-import useSWR from "swr";
 import type { Thread } from "@ocha/types";
-import { useAuth } from "./useAuth";
+import useSWR from "swr";
 import { client, getAuthHeaders } from "../lib/api";
+import { useAuth } from "./useAuth";
 
 interface ThreadsResponse {
   threads: Thread[];

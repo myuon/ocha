@@ -1,5 +1,5 @@
-import { hc } from "hono/client";
 import type { AppType } from "@ocha/api";
+import { hc } from "hono/client";
 
 // Create RPC client
 export const client = hc<AppType>("http://localhost:3000");

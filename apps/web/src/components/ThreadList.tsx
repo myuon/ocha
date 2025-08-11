@@ -2,7 +2,7 @@ import type { Thread } from "@ocha/types";
 
 interface ThreadListProps {
   threads: Thread[];
-  currentThreadId: string | null;
+  currentThreadId?: string;
   onThreadSelect: (threadId: string) => void;
   onNewThread: () => void;
 }

@@ -1,5 +1,6 @@
 import type { Thread, User } from "@ocha/types";
 import { useState } from "react";
+import { useMatch, useRevalidator } from "react-router";
 import {
   Outlet,
   useLoaderData,
@@ -9,7 +10,6 @@ import {
 import { GoogleSignIn } from "../../src/components/GoogleSignIn";
 import { ThreadList } from "../../src/components/ThreadList";
 import { useAuth } from "../../src/hooks/useAuth";
-import { useRevalidator } from "react-router";
 import { client, getAuthHeaders } from "../../src/lib/api";
 
 export async function loader() {
@@ -24,43 +24,26 @@ export async function loader() {
     return { threads: [] };
   }
 
-  try {
-    // Fetch threads
-    const threadsResponse = await client.api.threads.$get(
-      {},
-      {
-        headers: getAuthHeaders(),
-      }
-    );
-
-    let threads: Thread[] = [];
-    if (threadsResponse.ok) {
-      const threadsData = await threadsResponse.json();
-      threads = threadsData.threads;
+  const response = await client.api.threads.$get(
+    {},
+    {
+      headers: getAuthHeaders(),
     }
+  );
 
-    return { threads };
-  } catch (error) {
-    console.error("Threads loading error:", error);
-    return { threads: [] };
+  if (response.ok) {
+    const threadsData = await response.json();
+    return { threads: threadsData.threads };
   }
+
+  console.error("Threads loading error:", await response.text());
+  return { threads: [] };
 }
 
 export default function Layout() {
-  const initialData = useLoaderData<typeof loader>();
-  const location = useLocation();
+  const { threads } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const { user, signIn, signOut, setAuthError } = useAuth();
-
-  // Use useAuth for user state and loader data for initial threads
-  const currentUser = user;
-  const threads = initialData.threads;
-
-  const [currentThreadId, setCurrentThreadId] = useState<string | null>(() => {
-    // Extract thread ID from URL path
-    const match = location.pathname.match(/^\/threads\/(.+)$/);
-    return match ? match[1] : null;
-  });
 
   const { revalidate } = useRevalidator();
 
@@ -71,24 +54,19 @@ export default function Layout() {
 
   const handleSignOut = () => {
     signOut();
-    setCurrentThreadId(null);
     // Navigate to home and reload to clear all data
     navigate("/");
   };
 
-  const handleAuthError = (error: string) => {
-    setAuthError(error);
-  };
-
   const handleThreadSelect = (threadId: string) => {
-    setCurrentThreadId(threadId);
     navigate(`/threads/${threadId}`);
   };
 
   const handleNewThread = () => {
-    setCurrentThreadId(null);
     navigate("/");
   };
+
+  const matched = useMatch("/threads/:threadId");
 
   return (
     <div
@@ -99,7 +77,7 @@ export default function Layout() {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      {!currentUser ? (
+      {!user ? (
         <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
           <div
             style={{
@@ -112,7 +90,7 @@ export default function Layout() {
           >
             <h1 style={{ margin: 0 }}>Ocha</h1>
             <div>
-              <GoogleSignIn onSignIn={handleSignIn} onError={handleAuthError} />
+              <GoogleSignIn onSignIn={handleSignIn} onError={setAuthError} />
             </div>
           </div>
 
@@ -139,7 +117,7 @@ export default function Layout() {
         >
           <ThreadList
             threads={threads}
-            currentThreadId={currentThreadId}
+            currentThreadId={matched?.params.threadId}
             onThreadSelect={handleThreadSelect}
             onNewThread={handleNewThread}
           />
@@ -170,7 +148,7 @@ export default function Layout() {
               <h1 style={{ margin: 0, fontSize: "24px" }}>Ocha</h1>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <span style={{ fontSize: "0.9em", color: "#666" }}>
-                  {currentUser.name} ({currentUser.email})
+                  {user.name} ({user.email})
                 </span>
                 <button
                   type="button"

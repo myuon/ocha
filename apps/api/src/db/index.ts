@@ -1,37 +1,45 @@
+import type { Message, Thread } from "@ocha/types";
+import { desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sqlite-proxy";
-import { threads, messages } from "./schema.js";
-import { eq, desc } from "drizzle-orm";
-import type { Thread, Message } from "@ocha/types";
+import { messages, threads } from "./schema.js";
 
 export async function createDbConnection() {
-  if (process.env.NODE_ENV === 'production') console.warn('Using production database')
-  
+  if (process.env.NODE_ENV === "production")
+    console.warn("Using production database");
+
   return drizzle(async (sql, params, method) => {
-    const url = `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID!}/d1/database/${process.env.CLOUDFLARE_D1_DATABASE_ID!}/query`
+    const url = `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID!}/d1/database/${process.env.CLOUDFLARE_D1_DATABASE_ID!}/query`;
 
     const res = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ sql, params, method }),
-    })
+    });
 
-    const data = await res.json() as any
+    const data = (await res.json()) as any;
 
     if (res.status !== 200)
-      throw new Error(`Error from sqlite proxy server: ${res.status} ${res.statusText}\n${JSON.stringify(data)}`)
+      throw new Error(
+        `Error from sqlite proxy server: ${res.status} ${res.statusText}\n${JSON.stringify(data)}`
+      );
     if (data.errors.length > 0 || !data.success)
-      throw new Error(`Error from sqlite proxy server: \n${JSON.stringify(data)}}`)
+      throw new Error(
+        `Error from sqlite proxy server: \n${JSON.stringify(data)}}`
+      );
 
-    const qResult = data.result[0]
+    const qResult = data.result[0];
 
-    if (!qResult.success) throw new Error(`Error from sqlite proxy server: \n${JSON.stringify(data)}`)
+    if (!qResult.success)
+      throw new Error(
+        `Error from sqlite proxy server: \n${JSON.stringify(data)}`
+      );
 
     // https://orm.drizzle.team/docs/get-started-sqlite#http-proxy
-    return { rows: qResult.results.map((r: any) => Object.values(r)) }
-  })
+    return { rows: qResult.results.map((r: any) => Object.values(r)) };
+  });
 }
 
 class DrizzleDatabase {

@@ -118,32 +118,30 @@ export default function Thread() {
   }
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-      <MessageList
-        historicalMessages={threadData.messages}
-        currentMessages={messages as Message[]}
-        isLoadingHistory={false}
-        currentThreadId={threadId}
-        input={input}
-        onInputChange={setInput}
-        onSendMessage={({ text }) => {
-          sendMessage(
-            {
-              role: "user",
-              parts: [{ type: "text", text: text }],
+    <MessageList
+      historicalMessages={threadData.messages}
+      currentMessages={messages as Message[]}
+      isLoadingHistory={false}
+      currentThreadId={threadId}
+      input={input}
+      onInputChange={setInput}
+      onSendMessage={({ text }) => {
+        sendMessage(
+          {
+            role: "user",
+            parts: [{ type: "text", text: text }],
+          },
+          {
+            body: {
+              threadId,
             },
-            {
-              body: {
-                threadId,
-              },
-              headers: {
-                "Content-Type": "application/json",
-                ...getAuthHeaders(),
-              },
-            }
-          );
-        }}
-      />
-    </div>
+            headers: {
+              "Content-Type": "application/json",
+              ...getAuthHeaders(),
+            },
+          }
+        );
+      }}
+    />
   );
 }

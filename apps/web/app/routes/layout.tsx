@@ -10,6 +10,7 @@ import { GoogleSignIn } from "../../src/components/GoogleSignIn";
 import { ThreadList } from "../../src/components/ThreadList";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useRevalidator } from "react-router";
+import { client, getAuthHeaders } from "../../src/lib/api";
 
 export async function loader() {
   // Server-side rendering時はlocalStorageが使用できないため、クライアント専用
@@ -25,13 +26,12 @@ export async function loader() {
 
   try {
     // Verify token
-    const authResponse = await fetch("/api/auth/verify", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+    const authResponse = await client.api.auth.verify.$post(
+      {},
+      {
+        headers: getAuthHeaders(),
+      }
+    );
 
     if (!authResponse.ok) {
       localStorage.removeItem("auth_token");
@@ -41,11 +41,12 @@ export async function loader() {
     const authData = await authResponse.json();
 
     // Fetch threads
-    const threadsResponse = await fetch("/api/threads", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const threadsResponse = await client.api.threads.$get(
+      {},
+      {
+        headers: getAuthHeaders(),
+      }
+    );
 
     let threads: Thread[] = [];
     if (threadsResponse.ok) {

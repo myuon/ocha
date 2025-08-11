@@ -57,7 +57,6 @@ function useAuthProvider(): AuthContextType {
 
   // Verify existing token on mount
   const verifyToken = useCallback(async () => {
-    console.log("verifyToken");
     const storedToken = localStorage.getItem("auth_token");
     if (!storedToken) {
       setIsLoading(false);

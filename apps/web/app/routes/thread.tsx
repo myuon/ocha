@@ -11,6 +11,7 @@ import {
 } from "react-router-dom";
 import { MessageList } from "../../src/components/MessageList";
 import { useAuth } from "../../src/hooks/useAuth";
+import { client, getAuthHeaders } from "../../src/lib/api";
 
 export async function loader({
   params,
@@ -29,11 +30,14 @@ export async function loader({
   }
 
   try {
-    const response = await fetch(`/api/threads/${threadId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await client.api.threads[":threadId"].$get(
+      {
+        param: { threadId },
       },
-    });
+      {
+        headers: getAuthHeaders(),
+      }
+    );
 
     if (response.ok) {
       const data = await response.json();

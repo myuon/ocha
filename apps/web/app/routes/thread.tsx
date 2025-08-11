@@ -12,13 +12,9 @@ import {
 import { MessageList } from "../../src/components/MessageList";
 import { useAuth } from "../../src/hooks/useAuth";
 
-interface ThreadData {
-  messages: Message[];
-}
-
 export async function loader({
   params,
-}: LoaderFunctionArgs): Promise<ThreadData> {
+}: LoaderFunctionArgs) {
   const { threadId } = params;
 
   // Server-side rendering時はlocalStorageが使用できないため、クライアント専用
@@ -54,7 +50,7 @@ export async function loader({
 
 interface ThreadChatProps {
   threadId: string;
-  threadData: ThreadData;
+  threadData: Awaited<ReturnType<typeof loader>>;
   initialMessage?: string;
 }
 
@@ -129,7 +125,7 @@ function ThreadChat({ threadId, threadData, initialMessage }: ThreadChatProps) {
 
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
-  const threadData = useLoaderData() as ThreadData;
+  const threadData = useLoaderData<typeof loader>();
 
   // Get initial message from URL params (from home navigation)
   const { state } = useLocation();

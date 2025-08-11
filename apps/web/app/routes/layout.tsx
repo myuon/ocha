@@ -11,12 +11,7 @@ import { ThreadList } from "../../src/components/ThreadList";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useRevalidator } from "react-router";
 
-interface LayoutData {
-  user: User | null;
-  threads: Thread[];
-}
-
-export async function loader(): Promise<LayoutData> {
+export async function loader() {
   // Server-side rendering時はlocalStorageが使用できないため、クライアント専用
   if (typeof window === "undefined") {
     return { user: null, threads: [] };
@@ -67,7 +62,7 @@ export async function loader(): Promise<LayoutData> {
 }
 
 export default function Layout() {
-  const initialData = useLoaderData() as LayoutData;
+  const initialData = useLoaderData<typeof loader>();
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signIn, signOut, setAuthError } = useAuth();

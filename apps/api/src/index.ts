@@ -20,9 +20,6 @@ app
   .use("*", errorHandler)
   .use("*", cors())
   .use("*", logger())
-  .use("/api/auth/verify", requireAuth)
-  .use("/api/ai/*", requireAuth)
-  .use("/api/threads/*", requireAuth)
   // Serve frontend build (production)
   // assets under dist/public (copied during build)
   .use("/assets/*", serveStatic({ root: config.static.root }));
@@ -35,7 +32,7 @@ const route = app
   .route("/api/auth", authRoutes)
 
   // Protected routes (authentication required)
-  .route("/api/auth", verifyAuthRoutes)
+  .route("/api/verify", verifyAuthRoutes)
   .route("/api/ai", chatRoutes)
   .route("/api/threads", threadsRoutes)
   // SPA fallback for any non-API route

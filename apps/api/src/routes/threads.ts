@@ -3,6 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getDatabase } from "../db/index.js";
+import { requireAuth } from "../middleware/requireAuth.js";
 
 // Validation schemas
 const createThreadSchema = z.object({
@@ -19,7 +20,11 @@ function generateId(): string {
   return nanoid();
 }
 
-const threads = new Hono()
+const app = new Hono();
+
+app.use("*", requireAuth);
+
+const threads = app
   // GET /threads - Get all threads
   .get("/", async (c) => {
     try {

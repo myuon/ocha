@@ -7,12 +7,17 @@ import type { ToolPart } from "@ocha/types";
 import { config } from "../config/index.js";
 import { ChatRequestSchema } from "../types/chat.js";
 import type { AuthContext } from "../types/auth.js";
+import { requireAuth } from "../middleware/requireAuth.js";
 
 type Variables = {
   auth: AuthContext;
 };
 
-const chatRoutes = new Hono<{ Variables: Variables }>().post(
+const app = new Hono<{ Variables: Variables }>();
+
+app.use("*", requireAuth);
+
+const chatRoutes = app.post(
   "/chat",
   zValidator("json", ChatRequestSchema),
   async (c) => {

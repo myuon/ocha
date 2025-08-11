@@ -5,7 +5,6 @@
 PROJECT_ID ?= your-project-id
 REGION ?= asia-northeast1
 SERVICE_NAME ?= ocha
-LITESTREAM_BUCKET ?= ocha-litestream-backup
 
 help: ## Show this help message
 	@echo "Ocha Cloud Run Deployment"
@@ -38,7 +37,6 @@ deploy-setup: ## Setup GCloud project and enable APIs
 	gcloud services enable run.googleapis.com
 	gcloud services enable containerregistry.googleapis.com
 	gcloud services enable artifactregistry.googleapis.com
-	gcloud services enable storage.googleapis.com
 
 # First-time setup commands (run only once per project)
 setup-artifact-registry: ## Create Artifact Registry repository
@@ -65,20 +63,7 @@ setup-docker-auth: ## Configure Docker authentication for Artifact Registry
 	@echo "Configuring Docker authentication..."
 	gcloud auth configure-docker $(REGION)-docker.pkg.dev
 
-setup-litestream-bucket: ## Create GCS bucket for Litestream backups
-	@echo "Creating GCS bucket for Litestream backups..."
-	gsutil mb -p $(PROJECT_ID) -l $(REGION) gs://$(LITESTREAM_BUCKET) || echo "Bucket might already exist"
-	gsutil versioning set on gs://$(LITESTREAM_BUCKET)
-
-setup-litestream-permissions: ## Setup Litestream permissions for Cloud Run service
-	@echo "Setting up Litestream permissions..."
-	$(eval COMPUTE_SA := $(shell gcloud projects describe $(PROJECT_ID) --format="value(projectNumber)")-compute@developer.gserviceaccount.com)
-	gcloud projects add-iam-policy-binding $(PROJECT_ID) \
-		--member="serviceAccount:$(COMPUTE_SA)" \
-		--role="roles/storage.objectAdmin" \
-		--condition='expression=resource.name.startsWith("projects/_/buckets/$(LITESTREAM_BUCKET)/"),title=LitestreamBucketAccess'
-
-setup-first-time: setup-artifact-registry setup-permissions setup-docker-auth setup-litestream-bucket setup-litestream-permissions ## Complete first-time setup for new project
+setup-first-time: setup-artifact-registry setup-permissions setup-docker-auth ## Complete first-time setup for new project
 	@echo "First-time setup completed!"
 	@echo "You can now run 'make deploy' to deploy your application."
 
@@ -123,8 +108,3 @@ format: ## Format code
 lint: ## Lint code
 	npm run lint
 
-# Litestream specific commands
-setup-litestream: setup-litestream-bucket setup-litestream-permissions ## Setup only Litestream components
-
-check-bucket: ## Check if Litestream bucket exists
-	@gsutil ls -b gs://$(LITESTREAM_BUCKET) && echo "Bucket exists" || echo "Bucket does not exist"

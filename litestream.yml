@@ -1,4 +1,0 @@
-dbs:
-  - path: /app/conversations.db
-    replicas:
-      - url: gcs://ocha-litestream-backup/replicas

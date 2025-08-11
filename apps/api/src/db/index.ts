@@ -1,22 +1,48 @@
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/sqlite-proxy";
 import { threads, messages } from "./schema.js";
 import { eq, desc } from "drizzle-orm";
 import type { Thread, Message } from "@ocha/types";
 
+export async function createDbConnection() {
+  if (process.env.NODE_ENV === 'production') console.warn('Using production database')
+  
+  return drizzle(async (sql, params, method) => {
+    const url = `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID!}/d1/database/${process.env.CLOUDFLARE_D1_DATABASE_ID!}/query`
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sql, params, method }),
+    })
+
+    const data = await res.json() as any
+
+    if (res.status !== 200)
+      throw new Error(`Error from sqlite proxy server: ${res.status} ${res.statusText}\n${JSON.stringify(data)}`)
+    if (data.errors.length > 0 || !data.success)
+      throw new Error(`Error from sqlite proxy server: \n${JSON.stringify(data)}}`)
+
+    const qResult = data.result[0]
+
+    if (!qResult.success) throw new Error(`Error from sqlite proxy server: \n${JSON.stringify(data)}`)
+
+    // https://orm.drizzle.team/docs/get-started-sqlite#http-proxy
+    return { rows: qResult.results.map((r: any) => Object.values(r)) }
+  })
+}
+
 class DrizzleDatabase {
   private db: ReturnType<typeof drizzle>;
-  private sqlite: Database.Database;
 
-  constructor(dbPath: string = process.env.NODE_ENV === "production" ? "/app/conversations.db" : "./conversations.db") {
-    this.sqlite = new Database(dbPath);
-    this.db = drizzle(this.sqlite);
+  constructor(dbConnection: ReturnType<typeof drizzle>) {
+    this.db = dbConnection;
   }
 
   async initialize(): Promise<void> {
-    // Foreign keys are disabled by default in SQLite to maintain compatibility
-    // this.sqlite.pragma("foreign_keys = ON");
-    console.log("Database initialized with Drizzle ORM");
+    console.log("Database initialized with Drizzle ORM and Cloudflare D1");
   }
 
   async createThread(id: string, title?: string): Promise<Thread> {
@@ -24,15 +50,15 @@ class DrizzleDatabase {
       .insert(threads)
       .values({ id, title })
       .returning();
-    
+
     if (!thread) throw new Error("Failed to create thread");
-    
+
     // Convert Drizzle result to match existing interface
     return {
       id: thread.id,
       title: thread.title || undefined,
       created_at: thread.createdAt,
-      updated_at: thread.updatedAt
+      updated_at: thread.updatedAt,
     };
   }
 
@@ -42,14 +68,14 @@ class DrizzleDatabase {
       .from(threads)
       .where(eq(threads.id, id))
       .limit(1);
-    
+
     if (!thread) return undefined;
-    
+
     return {
       id: thread.id,
       title: thread.title || undefined,
       created_at: thread.createdAt,
-      updated_at: thread.updatedAt
+      updated_at: thread.updatedAt,
     };
   }
 
@@ -58,12 +84,12 @@ class DrizzleDatabase {
       .select()
       .from(threads)
       .orderBy(desc(threads.updatedAt));
-    
-    return result.map(thread => ({
+
+    return result.map((thread) => ({
       id: thread.id,
       title: thread.title || undefined,
       created_at: thread.createdAt,
-      updated_at: thread.updatedAt
+      updated_at: thread.updatedAt,
     }));
   }
 
@@ -86,13 +112,13 @@ class DrizzleDatabase {
       .returning();
 
     if (!message) throw new Error("Failed to add message");
-    
+
     return {
       id: message.id,
       thread_id: message.threadId,
       role: message.role,
       parts: message.parts,
-      created_at: message.createdAt
+      created_at: message.createdAt,
     };
   }
 
@@ -102,24 +128,22 @@ class DrizzleDatabase {
       .from(messages)
       .where(eq(messages.threadId, threadId))
       .orderBy(messages.createdAt);
-    
-    return result.map(message => ({
+
+    return result.map((message) => ({
       id: message.id,
       thread_id: message.threadId,
       role: message.role,
       parts: message.parts,
-      created_at: message.createdAt
+      created_at: message.createdAt,
     }));
   }
 
   async deleteThread(id: string): Promise<void> {
-    await this.db
-      .delete(threads)
-      .where(eq(threads.id, id));
+    await this.db.delete(threads).where(eq(threads.id, id));
   }
 
   async close(): Promise<void> {
-    this.sqlite.close();
+    // No need to close connection for D1
   }
 }
 
@@ -127,7 +151,18 @@ let dbInstance: DrizzleDatabase | null = null;
 
 export async function getDatabase(): Promise<DrizzleDatabase> {
   if (!dbInstance) {
-    dbInstance = new DrizzleDatabase();
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    const databaseId = process.env.CLOUDFLARE_D1_DATABASE_ID;
+    const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+    if (!accountId || !databaseId || !apiToken) {
+      throw new Error(
+        "Missing Cloudflare D1 configuration. Please set CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_D1_DATABASE_ID, and CLOUDFLARE_API_TOKEN environment variables."
+      );
+    }
+
+    const dbConnection = await createDbConnection();
+    dbInstance = new DrizzleDatabase(dbConnection);
     await dbInstance.initialize();
   }
   return dbInstance;

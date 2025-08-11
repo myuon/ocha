@@ -5,9 +5,10 @@ export default defineConfig({
   schema: resolve(__dirname, "apps/api/src/db/schema.ts"),
   out: resolve(__dirname, "apps/api/src/db/migrations"),
   dialect: "sqlite",
+  driver: "d1-http",
   dbCredentials: {
-    url: process.env.NODE_ENV === "production" 
-      ? "file:/app/conversations.db"
-      : "file:./conversations.db"
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
+    databaseId: process.env.CLOUDFLARE_D1_DATABASE_ID!,
+    token: process.env.CLOUDFLARE_API_TOKEN!
   }
 });

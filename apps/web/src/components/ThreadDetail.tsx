@@ -4,7 +4,7 @@ import { MessageList } from "./MessageList";
 interface ThreadDetailProps {
   user: User;
   historicalMessages: Message[];
-  currentMessages: any[];
+  currentMessages: Message[];
   isLoadingHistory: boolean;
   currentThreadId: string | null;
   input: string;
@@ -24,7 +24,6 @@ export function ThreadDetail({
   onInputChange,
   onSendMessage,
   onSignOut,
-  authError,
 }: ThreadDetailProps) {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>

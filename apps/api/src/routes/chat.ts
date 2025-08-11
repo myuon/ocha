@@ -2,6 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { convertToModelMessages, streamText } from "ai";
 import type { Context } from "hono";
 import { nanoid } from "nanoid";
+import type { ToolPart } from "@ocha/types";
 import { config } from "../config/index.js";
 import { ChatRequestSchema } from "../types/chat.js";
 
@@ -45,8 +46,8 @@ export const chatHandler = async (c: Context) => {
             lastMessage.content ||
             (lastMessage.parts
               ? lastMessage.parts
-                  .filter((part: any) => part.type === "text")
-                  .map((part: any) => part.text)
+                  .filter((part: ToolPart) => part.type === "text")
+                  .map((part: ToolPart) => part.input?.text || "")
                   .join("")
               : "");
           await db.addMessage(
@@ -82,7 +83,7 @@ export const chatHandler = async (c: Context) => {
           },
         }),
       },
-      async onFinish({ text, finishReason, usage, response }) {
+      async onFinish({ text }) {
         // Save conversation to database if threadId is provided
         if (threadId) {
           try {

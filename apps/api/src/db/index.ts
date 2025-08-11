@@ -1,7 +1,7 @@
-import { readFile } from "fs/promises";
-import { dirname, join } from "path";
+import { readFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import sqlite3 from "sqlite3";
-import { fileURLToPath } from "url";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -39,9 +39,9 @@ class Database {
           try {
             await this.run("ALTER TABLE messages ADD COLUMN parts TEXT");
             console.log("Added parts column to messages table");
-          } catch (migrationError: any) {
+          } catch (migrationError: unknown) {
             // Column already exists or other error - that's okay
-            if (!migrationError.message?.includes("duplicate column name")) {
+            if (migrationError instanceof Error && !migrationError.message?.includes("duplicate column name")) {
               console.warn("Migration warning:", migrationError.message);
             }
           }
@@ -54,11 +54,12 @@ class Database {
     });
   }
 
-  private async run(sql: string, params: any[] = []): Promise<void> {
+  private async run(sql: string, params: unknown[] = []): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
+    const db = this.db;
 
     return new Promise((resolve, reject) => {
-      this.db!.run(sql, params, (err) => {
+      db.run(sql, params, (err) => {
         if (err) reject(err);
         else resolve();
       });
@@ -67,23 +68,25 @@ class Database {
 
   private async get<T>(
     sql: string,
-    params: any[] = []
+    params: unknown[] = []
   ): Promise<T | undefined> {
     if (!this.db) throw new Error("Database not initialized");
+    const db = this.db;
 
     return new Promise((resolve, reject) => {
-      this.db!.get(sql, params, (err, row) => {
+      db.get(sql, params, (err, row) => {
         if (err) reject(err);
         else resolve(row as T);
       });
     });
   }
 
-  private async all<T>(sql: string, params: any[] = []): Promise<T[]> {
+  private async all<T>(sql: string, params: unknown[] = []): Promise<T[]> {
     if (!this.db) throw new Error("Database not initialized");
+    const db = this.db;
 
     return new Promise((resolve, reject) => {
-      this.db!.all(sql, params, (err, rows) => {
+      db.all(sql, params, (err, rows) => {
         if (err) reject(err);
         else resolve(rows as T[]);
       });
@@ -118,7 +121,7 @@ class Database {
     threadId: string,
     role: "user" | "assistant" | "system",
     content?: string,
-    parts?: any[]
+    parts?: unknown[]
   ): Promise<Message> {
     // Update thread's updated_at timestamp
     await this.run(
@@ -157,9 +160,10 @@ class Database {
 
   async close(): Promise<void> {
     if (!this.db) return;
+    const db = this.db;
 
     return new Promise((resolve, reject) => {
-      this.db!.close((err) => {
+      db.close((err) => {
         if (err) reject(err);
         else resolve();
       });

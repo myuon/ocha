@@ -12,7 +12,7 @@ export default function App() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [historicalMessages, setHistoricalMessages] = useState<Message[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [threadTitles, setThreadTitles] = useState<Record<string, string>>({});
+  const [_threadTitles, _setThreadTitles] = useState<Record<string, string>>({});
   const currentThreadIdRef = useRef<string | null>(null);
 
   const { messages, sendMessage: originalSendMessage } = useChat({

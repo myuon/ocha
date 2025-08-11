@@ -27,6 +27,7 @@ export function ThreadList({
       <div style={{ padding: 16, borderBottom: "1px solid #ddd" }}>
         <h3 style={{ margin: 0, fontSize: 18 }}>Threads</h3>
         <button
+          type="button"
           onClick={onNewThread}
           style={{
             marginTop: 8,
@@ -48,7 +49,15 @@ export function ThreadList({
         {threads.map((thread) => (
           <div
             key={thread.id}
+            role="button"
+            tabIndex={0}
             onClick={() => onThreadSelect(thread.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onThreadSelect(thread.id);
+              }
+            }}
             style={{
               padding: 12,
               borderBottom: "1px solid #e0e0e0",

@@ -173,6 +173,13 @@ class DrizzleDatabase {
     await this.db.delete(threads).where(eq(threads.id, id));
   }
 
+  async updateThreadTitle(id: string, title: string): Promise<void> {
+    await this.db
+      .update(threads)
+      .set({ title, updatedAt: new Date().toISOString() })
+      .where(eq(threads.id, id));
+  }
+
   async close(): Promise<void> {
     // No need to close connection for D1
   }

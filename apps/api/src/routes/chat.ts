@@ -1,6 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { zValidator } from "@hono/zod-validator";
-import { convertToModelMessages, streamText } from "ai";
+import { convertToModelMessages, generateText, streamText } from "ai";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
 import { config } from "../config/index.js";
@@ -124,10 +124,35 @@ const chatRoutes = app.post(
       );
       console.log(`Saved user message to thread ${threadId}`);
 
+      const openai = createOpenAI({ apiKey });
+
+      // Generate title if thread doesn't have one
+      if (!thread.title) {
+        try {
+          // Generate a concise title from the user's first message
+          const titlePrompt = `Based on this user message, generate a short, concise title (max 50 characters) that summarizes the topic or question. Return ONLY the title, nothing else:\n\n"${userContent}"`;
+
+          const titleResult = await generateText({
+            model: openai("gpt-4o-mini"),
+            prompt: titlePrompt,
+            maxOutputTokens: 20,
+          });
+
+          const generatedTitle = titleResult.text.trim();
+          if (generatedTitle) {
+            await db.updateThreadTitle(threadId, generatedTitle);
+            console.log(
+              `Generated and saved title for thread ${threadId}: "${generatedTitle}"`
+            );
+          }
+        } catch (error) {
+          console.error("Failed to generate thread title:", error);
+          // Don't fail the request if title generation fails
+        }
+      }
+
       // Convert UI messages to model messages
       const modelMessages = convertToModelMessages(allMessages);
-
-      const openai = createOpenAI({ apiKey });
 
       const result = streamText({
         model: openai("gpt-4o-mini"),

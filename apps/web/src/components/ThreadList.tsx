@@ -47,18 +47,15 @@ export function ThreadList({
       {/* Thread List */}
       <div style={{ flex: 1, overflowY: "auto" }}>
         {threads.map((thread) => (
-          <div
+          <button
             key={thread.id}
-            role="button"
-            tabIndex={0}
+            type="button"
             onClick={() => onThreadSelect(thread.id)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onThreadSelect(thread.id);
-              }
-            }}
             style={{
+              all: "unset",
+              display: "block",
+              width: "100%",
+              textAlign: "left",
               padding: 12,
               borderBottom: "1px solid #e0e0e0",
               cursor: "pointer",
@@ -83,7 +80,7 @@ export function ThreadList({
             <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
               {new Date(thread.updated_at).toLocaleDateString()}
             </div>
-          </div>
+          </button>
         ))}
         {threads.length === 0 && (
           <div style={{ padding: 16, textAlign: "center", color: "#666" }}>

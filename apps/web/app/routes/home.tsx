@@ -29,13 +29,27 @@ export default function Home() {
       // Create a new thread first using SWR (auxiliary usage)
       const threadId = await createThread();
       
-      // Store the pending message in sessionStorage to send after navigation
-      sessionStorage.setItem('pendingMessage', message.text);
+      // Send message to the API with the new threadId
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: message.text }],
+          threadId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
       
-      // Navigate to the new thread page
+      // Navigate to the new thread page after sending the message
       navigate(`/threads/${threadId}`);
     } catch (error) {
-      console.error("Error creating thread:", error);
+      console.error("Error creating thread or sending message:", error);
     }
   };
 

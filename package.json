@@ -11,6 +11,7 @@
     "dev:api": "npm run dev -w apps/api",
     "build": "npm run build -w apps/web && npm run build:with-static -w apps/api",
     "start": "npm run start -w apps/api",
+    "typecheck": "npm run typecheck -w apps/types && npm run typecheck -w apps/web && npm run typecheck -w apps/api",
     "lint": "biome lint apps/",
     "lint:fix": "biome lint --write apps/",
     "format": "biome format --write apps/",
